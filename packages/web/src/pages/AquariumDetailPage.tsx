@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Eye } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -16,7 +16,8 @@ import type {
   WaterType,
   AccessToken,
 } from '../types/api.js';
-import { WaterParameterChart } from '../components/WaterParameterChart.js';
+import { WaterTestSnapshotChart } from '../components/WaterTestSnapshotChart.js';
+import { WaterTestTrendChart } from '../components/WaterTestTrendChart.js';
 import { WaterTestDeleteButton } from '../components/WaterTestDeleteButton.js';
 import { AnimalEditDialog } from '../components/AnimalEditDialog.js';
 import { AnimalViewDialog } from '../components/AnimalViewDialog.js';
@@ -55,7 +56,8 @@ export function AquariumDetailPage() {
   const nav = useNavigate();
   const qc = useQueryClient();
   const id = aquariumId!;
-  const [paramName, setParamName] = useState('pH');
+  const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
+  const [paramFilter, setParamFilter] = useState('');
 
   const detailQ = useQuery({
     queryKey: ['aquarium', id],
@@ -83,16 +85,47 @@ export function AquariumDetailPage() {
     enabled: Boolean(token && aquariumId),
   });
 
+  const tests = useMemo(() => testsQ.data?.items ?? [], [testsQ.data?.items]);
+
+  useEffect(() => {
+    if (tests.length === 0) {
+      setSelectedTestId(null);
+      return;
+    }
+    if (!selectedTestId || !tests.some((t) => t.id === selectedTestId)) {
+      setSelectedTestId(tests[0].id);
+    }
+  }, [tests, selectedTestId]);
+
+  const selectedTest = useMemo(
+    () => tests.find((t) => t.id === selectedTestId) ?? null,
+    [tests, selectedTestId],
+  );
+
+  const paramFilterOptions = useMemo(() => {
+    const names = new Set<string>();
+    for (const t of tests) {
+      for (const r of t.results) names.add(r.testParameter.name);
+    }
+    return Array.from(names).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  }, [tests]);
+
+  useEffect(() => {
+    if (paramFilter && selectedTest && !selectedTest.results.some((r) => r.testParameter.name === paramFilter)) {
+      setParamFilter('');
+    }
+  }, [selectedTestId, selectedTest, paramFilter]);
+
   const histQ = useQuery({
-    queryKey: ['aquarium', id, 'history', paramName],
+    queryKey: ['aquarium', id, 'history', paramFilter],
     queryFn: () =>
       apiFetch<{
         points: { testedAt: string; value: number; isWithinRange: boolean | null }[];
         idealRange: { idealMin: number | null; idealMax: number | null } | null;
-      }>(`/aquariums/${id}/water-tests/history?parameter=${encodeURIComponent(paramName)}`, {
+      }>(`/aquariums/${id}/water-tests/history?parameter=${encodeURIComponent(paramFilter)}`, {
         token,
       }),
-    enabled: Boolean(token && aquariumId && paramName),
+    enabled: Boolean(token && aquariumId && paramFilter),
   });
 
   const changesQ = useQuery({
@@ -268,33 +301,64 @@ export function AquariumDetailPage() {
         <TabsContent value="tests">
           <Card>
             <CardHeader>
-              <CardTitle>Histórico e tendência por parâmetro</CardTitle>
+              <CardTitle>Resultados dos testes</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               <div className="flex flex-wrap items-end gap-3">
                 <div className="space-y-1">
-                  <Label>Parâmetro</Label>
+                  <Label htmlFor="paramFilter">Parâmetro</Label>
                   <select
+                    id="paramFilter"
                     className="h-9 min-w-[240px] rounded-md border border-input bg-background px-2 text-sm text-foreground"
-                    value={paramName}
-                    onChange={(e) => setParamName(e.target.value)}
+                    value={paramFilter}
+                    onChange={(e) => setParamFilter(e.target.value)}
                   >
-                    {(tpQ.data?.items ?? []).map((tp) => (
-                      <option key={tp.id} value={tp.name}>
-                        {tp.name} ({tp.unit})
-                      </option>
-                    ))}
+                    <option value="">Todos os parâmetros</option>
+                    {paramFilterOptions.map((name) => {
+                      const tp = (tpQ.data?.items ?? []).find((p) => p.name === name);
+                      return (
+                        <option key={name} value={name}>
+                          {name}
+                          {tp?.unit ? ` (${tp.unit})` : ''}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
               </div>
-              <WaterParameterChart
-                points={histQ.data?.points ?? []}
-                idealMin={histQ.data?.idealRange?.idealMin ?? null}
-                idealMax={histQ.data?.idealRange?.idealMax ?? null}
+
+              <WaterTestSnapshotChart
+                test={selectedTest}
+                parameterFilter={paramFilter}
+                waterType={aq?.waterType}
+                parameterCatalog={tpQ.data?.items ?? []}
               />
 
-              <h3 className="pt-6 text-sm font-medium text-foreground">Últimos testes</h3>
-              <WaterTestsTable aquariumId={id} tests={testsQ.data?.items ?? []} token={token} />
+              {paramFilter && histQ.data ? (
+                <WaterTestTrendChart
+                  points={histQ.data.points}
+                  idealMin={histQ.data.idealRange?.idealMin ?? null}
+                  idealMax={histQ.data.idealRange?.idealMax ?? null}
+                  parameterName={paramFilter}
+                  highlightTestedAt={selectedTest?.testedAt ?? null}
+                />
+              ) : null}
+
+              <div className="space-y-3 border-t border-border pt-6">
+                <div>
+                  <h3 className="text-sm font-medium text-foreground">Testes registrados</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Clique em um teste para visualizar no gráfico. O mais recente é selecionado automaticamente.
+                  </p>
+                </div>
+                <WaterTestsTable
+                  aquariumId={id}
+                  tests={tests}
+                  token={token}
+                  selectedTestId={selectedTestId}
+                  onSelectTest={setSelectedTestId}
+                />
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -445,10 +509,14 @@ function WaterTestsTable({
   aquariumId,
   tests,
   token,
+  selectedTestId,
+  onSelectTest,
 }: {
   aquariumId: string;
   tests: WaterTest[];
   token: AccessToken | null;
+  selectedTestId: string | null;
+  onSelectTest: (id: string) => void;
 }) {
   if (tests.length === 0) {
     return <p className="text-sm text-muted-foreground">Nenhum teste registrado ainda.</p>;
@@ -464,23 +532,33 @@ function WaterTestsTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {tests.map((t) => (
-          <TableRow key={t.id}>
-            <TableCell className="whitespace-nowrap">{new Date(t.testedAt).toLocaleString('pt-BR')}</TableCell>
-            <TableCell className="text-muted-foreground">
-              {t.results.slice(0, 8).map((r) => (
-                <span key={r.id} className="mr-3 inline-block">
-                  <strong>{r.testParameter.name}:</strong> {r.value}
-                </span>
-              ))}
-            </TableCell>
-            <TableCell className="text-right">
-              <RowActions>
-                <WaterTestDeleteButton test={t} aquariumId={aquariumId} token={token} />
-              </RowActions>
-            </TableCell>
-          </TableRow>
-        ))}
+        {tests.map((t) => {
+          const selected = t.id === selectedTestId;
+          return (
+            <TableRow
+              key={t.id}
+              className={`cursor-pointer ${selected ? 'bg-primary/10 hover:bg-primary/15' : ''}`}
+              onClick={() => onSelectTest(t.id)}
+            >
+              <TableCell className="whitespace-nowrap">
+                {selected ? <span className="mr-2 text-primary">●</span> : null}
+                {new Date(t.testedAt).toLocaleString('pt-BR')}
+              </TableCell>
+              <TableCell className="text-muted-foreground">
+                {t.results.slice(0, 8).map((r) => (
+                  <span key={r.id} className="mr-3 inline-block">
+                    <strong className="text-foreground">{r.testParameter.name}:</strong> {r.value}
+                  </span>
+                ))}
+              </TableCell>
+              <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                <RowActions>
+                  <WaterTestDeleteButton test={t} aquariumId={aquariumId} token={token} />
+                </RowActions>
+              </TableCell>
+            </TableRow>
+          );
+        })}
       </TableBody>
     </Table>
   );

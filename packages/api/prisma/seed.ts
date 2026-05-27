@@ -17,7 +17,11 @@ const TEST_PARAMETERS = [
   { name: 'Fosfato (PO4)', unit: 'ppm', description: 'Nutriente / causador de algas' },
   { name: 'Ferro (Fe)', unit: 'ppm', description: 'Essencial para plantas' },
   { name: 'Cobre (Cu)', unit: 'ppm', description: 'Tóxico para invertebrados' },
-  { name: 'Salinidade', unit: 'ppt', description: 'Concentração de sal dissolvido' },
+  {
+    name: 'Salinidade',
+    unit: 'densidade',
+    description: 'Escala SG×1000 (ex.: 1024 = densidade 1,024). Ideal marinho: 1024–1026.',
+  },
   { name: 'Cálcio (Ca)', unit: 'ppm', description: 'Crítico para corais e invertebrados' },
   { name: 'Magnésio (Mg)', unit: 'ppm', description: 'Estabiliza cálcio e alcalinidade' },
   { name: 'Alcalinidade (dKH)', unit: 'dKH', description: 'Capacidade tampão (medida marinha)' },
@@ -79,7 +83,8 @@ const RANGES: Record<string, Partial<Record<WaterType, RangeDef>>> = {
   },
   Salinidade: {
     FRESHWATER: { min: 0, max: 1 },
-    SALTWATER: { min: 33, max: 35 },
+    /** Densidade/SG×1000 — não usar ppt (33–35) para aquário marinho com refratômetro 1,0xx */
+    SALTWATER: { min: 1024, max: 1026 },
     BRACKISH: { min: 5, max: 15 },
   },
   'Cálcio (Ca)': {

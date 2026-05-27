@@ -2,7 +2,7 @@ import type { PrismaClient } from '@prisma/client';
 import { notFound } from '../../shared/errors/app-error.js';
 import { buildMeta, offsetFromPage, paginationQuerySchema } from '../../shared/utils/pagination.js';
 import { findOwnedAquarium } from '../../shared/middlewares/ownership.js';
-import { computeIsWithinRange } from '../../shared/utils/range.js';
+import { evaluateParameterStatus } from '../../shared/utils/range.js';
 import type { z } from 'zod';
 import type { createWaterTestBodySchema, waterTestHistoryQuerySchema } from './water-test.schema.js';
 
@@ -49,6 +49,11 @@ export async function createWaterTest(
     },
   });
   const rangeByParam = new Map(ranges.map((r) => [r.testParameterId, r]));
+  const params = await prisma.testParameter.findMany({
+    where: { id: { in: parameterIds } },
+    select: { id: true, name: true },
+  });
+  const nameByParamId = new Map(params.map((p) => [p.id, p.name]));
 
   return prisma.$transaction(async (tx) => {
     const test = await tx.waterTest.create({
@@ -61,7 +66,8 @@ export async function createWaterTest(
 
     for (const row of body.results) {
       const range = rangeByParam.get(row.testParameterId) ?? null;
-      const isWithinRange = computeIsWithinRange(row.value, range);
+      const paramName = nameByParamId.get(row.testParameterId);
+      const isWithinRange = evaluateParameterStatus(row.value, paramName, range) === 'ok';
       await tx.waterTestResult.create({
         data: {
           waterTestId: test.id,
