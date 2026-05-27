@@ -93,6 +93,15 @@ export async function getWaterTestById(prisma: PrismaClient, userId: string, id:
   return test;
 }
 
+export async function deleteWaterTest(prisma: PrismaClient, userId: string, id: string) {
+  const test = await prisma.waterTest.findFirst({
+    where: { id, aquarium: { userId } },
+    select: { id: true, aquariumId: true },
+  });
+  if (!test) throw notFound('Teste de água não encontrado');
+  await prisma.waterTest.delete({ where: { id } });
+}
+
 export async function historyForParameter(
   prisma: PrismaClient,
   userId: string,

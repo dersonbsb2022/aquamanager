@@ -87,3 +87,11 @@ export async function recordEquipmentMaintenance(
     },
   });
 }
+
+export async function deleteEquipment(prisma: PrismaClient, userId: string, equipmentId: string) {
+  const equipment = await prisma.equipment.findFirst({
+    where: { id: equipmentId, aquarium: { userId } },
+  });
+  if (!equipment) throw notFound('Equipamento não encontrado');
+  await prisma.equipment.delete({ where: { id: equipmentId } });
+}

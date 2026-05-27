@@ -4,6 +4,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth.js';
 import { apiFetch } from '../services/api.js';
 import type { Paginated, TestParameter } from '../types/api.js';
+import { DeleteIconButton, RowActions, RowIconButton } from '../components/row-actions.js';
 import { Button } from '../components/ui/button.js';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card.js';
 import { Input } from '../components/ui/input.js';
@@ -31,11 +32,11 @@ export function TestParametersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <Link className="text-sm text-sky-700 hover:underline" to="/">
+        <Link className="text-sm text-primary hover:underline" to="/">
           ← Dashboard
         </Link>
         <h2 className="mt-4 text-2xl font-semibold">Parâmetros de teste</h2>
-        <p className="text-sm text-slate-600">CRUD de referência utilizado nos testes de água</p>
+        <p className="text-sm text-muted-foreground">CRUD de referência utilizado nos testes de água</p>
       </div>
 
       <Card>
@@ -85,7 +86,7 @@ export function TestParametersPage() {
           <CardTitle>Lista</CardTitle>
         </CardHeader>
         <CardContent>
-          {q.isLoading ? <p className="text-sm text-slate-600">Carregando…</p> : null}
+          {q.isLoading ? <p className="text-sm text-muted-foreground">Carregando…</p> : null}
           <Table>
             <TableHeader>
               <TableRow>
@@ -154,9 +155,20 @@ function EditableRow({
         <Input value={description} onChange={(e) => setDescription(e.target.value)} />
       </TableCell>
       <TableCell>
-        <Button type="button" size="sm" variant="outline" disabled={m.isPending} onClick={() => m.mutate()}>
-          Salvar
-        </Button>
+        <RowActions>
+          <RowIconButton
+            variant="save"
+            title="Salvar parâmetro"
+            loading={m.isPending}
+            onClick={() => m.mutate()}
+          />
+          <DeleteIconButton
+            title="Excluir parâmetro"
+            confirmMessage={`Excluir o parâmetro "${row.name}"?\n\nSó é possível se nunca foi usado em um teste.`}
+            deleteFn={() => apiFetch<void>(`/test-parameters/${row.id}`, { method: 'DELETE', token })}
+            onSuccess={onSaved}
+          />
+        </RowActions>
       </TableCell>
     </TableRow>
   );

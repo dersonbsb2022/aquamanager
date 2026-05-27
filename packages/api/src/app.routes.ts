@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import {
   createAquarium,
@@ -16,6 +16,7 @@ import {
 } from './modules/aquarium/aquarium.schema.js';
 import {
   createAnimal,
+  deleteAnimal,
   listAnimals,
   patchAnimalStatus,
   updateAnimal,
@@ -32,6 +33,7 @@ import {
 } from './modules/test-parameter/test-parameter.schema.js';
 import {
   createTestParameter,
+  deleteTestParameter,
   listTestParameters,
   updateTestParameter,
 } from './modules/test-parameter/test-parameter.service.js';
@@ -41,12 +43,13 @@ import {
 } from './modules/water-test/water-test.schema.js';
 import {
   createWaterTest,
+  deleteWaterTest,
   getWaterTestById,
   historyForParameter,
   listWaterTests,
 } from './modules/water-test/water-test.service.js';
 import { createWaterChangeBodySchema } from './modules/water-change/water-change.schema.js';
-import { createWaterChange, listWaterChanges } from './modules/water-change/water-change.service.js';
+import { createWaterChange, deleteWaterChange, listWaterChanges } from './modules/water-change/water-change.service.js';
 import {
   createEquipmentBodySchema,
   equipmentMaintenanceBodySchema,
@@ -54,12 +57,13 @@ import {
 } from './modules/equipment/equipment.schema.js';
 import {
   createEquipment,
+  deleteEquipment,
   listEquipments,
   recordEquipmentMaintenance,
   updateEquipment,
 } from './modules/equipment/equipment.service.js';
 import { createDosingBodySchema } from './modules/dosing/dosing.schema.js';
-import { createDosing, listDosings } from './modules/dosing/dosing.service.js';
+import { createDosing, deleteDosing, listDosings } from './modules/dosing/dosing.service.js';
 import {
   createAquariumNoteBodySchema,
   updateAquariumNoteBodySchema,
@@ -72,7 +76,13 @@ import {
 } from './modules/aquarium-note/aquarium-note.service.js';
 import { updateProfileBodySchema } from './modules/user/user.schema.js';
 import { getProfile, updateProfile } from './modules/user/user.service.js';
-import { notFound } from './shared/errors/app-error.js';
+import {
+  deleteAnimalPhoto,
+  deleteAquariumPhoto,
+  uploadAnimalPhoto,
+  uploadAquariumPhoto,
+} from './modules/photo/photo.service.js';
+import { badRequest, notFound } from './shared/errors/app-error.js';
 import { sendNoContent, sendOk } from './shared/http/reply.js';
 import { authMiddleware } from './shared/middlewares/auth.js';
 import { paginationQuerySchema } from './shared/utils/pagination.js';
@@ -84,6 +94,12 @@ const uuidParamSchema = z.object({
 const aquariumParamSchema = z.object({
   aquariumId: z.string().uuid(),
 });
+
+async function readPhotoUpload(req: FastifyRequest) {
+  const file = await req.file();
+  if (!file) throw badRequest('Envie uma imagem no campo "photo"');
+  return { buffer: await file.toBuffer(), mimetype: file.mimetype };
+}
 
 async function authedRoutesPlugin(instance: FastifyInstance): Promise<void> {
   instance.addHook('preHandler', authMiddleware);
@@ -150,11 +166,24 @@ async function authedRoutesPlugin(instance: FastifyInstance): Promise<void> {
       }
     });
 
+    instance.delete('/test-parameters/:id', async (req, reply) => {
+      const { id } = uuidParamSchema.parse(req.params);
+      await deleteTestParameter(instance.prisma, id);
+      return sendNoContent(reply);
+    });
+
     instance.get('/water-tests/:id', async (req, reply) => {
       const { id } = uuidParamSchema.parse(req.params);
       const userId = req.userId!;
       const test = await getWaterTestById(instance.prisma, userId, id);
       return sendOk(reply, test);
+    });
+
+    instance.delete('/water-tests/:id', async (req, reply) => {
+      const { id } = uuidParamSchema.parse(req.params);
+      const userId = req.userId!;
+      await deleteWaterTest(instance.prisma, userId, id);
+      return sendNoContent(reply);
     });
 
     instance.put('/animals/:id', async (req, reply) => {
@@ -178,6 +207,28 @@ async function authedRoutesPlugin(instance: FastifyInstance): Promise<void> {
       return sendOk(reply, animal);
     });
 
+    instance.post('/animals/:id/photo', async (req, reply) => {
+      const { id } = uuidParamSchema.parse(req.params);
+      const userId = req.userId!;
+      const file = await readPhotoUpload(req);
+      const animal = await uploadAnimalPhoto(instance.prisma, userId, id, file);
+      return sendOk(reply, animal);
+    });
+
+    instance.delete('/animals/:id/photo', async (req, reply) => {
+      const { id } = uuidParamSchema.parse(req.params);
+      const userId = req.userId!;
+      const animal = await deleteAnimalPhoto(instance.prisma, userId, id);
+      return sendOk(reply, animal);
+    });
+
+    instance.delete('/animals/:id', async (req, reply) => {
+      const { id } = uuidParamSchema.parse(req.params);
+      const userId = req.userId!;
+      await deleteAnimal(instance.prisma, userId, id);
+      return sendNoContent(reply);
+    });
+
     instance.put('/equipments/:id', async (req, reply) => {
       const { id } = uuidParamSchema.parse(req.params);
       const body = updateEquipmentBodySchema.parse(req.body);
@@ -197,6 +248,27 @@ async function authedRoutesPlugin(instance: FastifyInstance): Promise<void> {
       const userId = req.userId!;
       const eq = await recordEquipmentMaintenance(instance.prisma, userId, id, body);
       return sendOk(reply, eq);
+    });
+
+    instance.delete('/equipments/:id', async (req, reply) => {
+      const { id } = uuidParamSchema.parse(req.params);
+      const userId = req.userId!;
+      await deleteEquipment(instance.prisma, userId, id);
+      return sendNoContent(reply);
+    });
+
+    instance.delete('/water-changes/:id', async (req, reply) => {
+      const { id } = uuidParamSchema.parse(req.params);
+      const userId = req.userId!;
+      await deleteWaterChange(instance.prisma, userId, id);
+      return sendNoContent(reply);
+    });
+
+    instance.delete('/dosings/:id', async (req, reply) => {
+      const { id } = uuidParamSchema.parse(req.params);
+      const userId = req.userId!;
+      await deleteDosing(instance.prisma, userId, id);
+      return sendNoContent(reply);
     });
 
     instance.get('/aquariums', async (req, reply) => {
@@ -351,6 +423,21 @@ async function authedRoutesPlugin(instance: FastifyInstance): Promise<void> {
       const body = updateAquariumBodySchema.parse(req.body);
       const userId = req.userId!;
       const aquarium = await updateAquarium(instance.prisma, userId, aquariumId, body);
+      return sendOk(reply, aquarium);
+    });
+
+    instance.post('/aquariums/:aquariumId/photo', async (req, reply) => {
+      const { aquariumId } = aquariumParamSchema.parse(req.params);
+      const userId = req.userId!;
+      const file = await readPhotoUpload(req);
+      const aquarium = await uploadAquariumPhoto(instance.prisma, userId, aquariumId, file);
+      return sendOk(reply, aquarium);
+    });
+
+    instance.delete('/aquariums/:aquariumId/photo', async (req, reply) => {
+      const { aquariumId } = aquariumParamSchema.parse(req.params);
+      const userId = req.userId!;
+      const aquarium = await deleteAquariumPhoto(instance.prisma, userId, aquariumId);
       return sendOk(reply, aquarium);
     });
 

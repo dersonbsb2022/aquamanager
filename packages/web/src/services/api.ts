@@ -85,7 +85,7 @@ export async function apiFetch<T>(path: string, init?: ApiFetchOptions): Promise
   const token = init?.token ?? getStoredToken();
   const url = `${baseUrl()}${path.startsWith('/') ? path : `/${path}`}`;
   const headers = new Headers(init?.headers);
-  if (init?.body !== undefined && !headers.has('Content-Type')) {
+  if (init?.body !== undefined && !headers.has('Content-Type') && !(init.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
   }
   if (token) {
@@ -130,4 +130,14 @@ export async function apiFetch<T>(path: string, init?: ApiFetchOptions): Promise
     return undefined as T;
   }
   return (body as ApiSuccess<T>).data;
+}
+
+export async function apiUpload<T>(
+  path: string,
+  file: File,
+  init?: { token?: AccessToken | null },
+): Promise<T> {
+  const fd = new FormData();
+  fd.append('photo', file);
+  return apiFetch<T>(path, { method: 'POST', body: fd, token: init?.token });
 }

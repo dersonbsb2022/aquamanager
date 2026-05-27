@@ -16,5 +16,7 @@ RUN npm install --omit=dev && npm install prisma@^6.8.2 --no-save
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+RUN mkdir -p uploads
+ENV UPLOAD_DIR=/app/uploads
 EXPOSE 3333
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]

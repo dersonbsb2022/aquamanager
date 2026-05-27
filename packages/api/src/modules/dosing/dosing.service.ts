@@ -1,5 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
 import { buildMeta, offsetFromPage, paginationQuerySchema } from '../../shared/utils/pagination.js';
+import { notFound } from '../../shared/errors/app-error.js';
 import { findOwnedAquarium } from '../../shared/middlewares/ownership.js';
 import type { z } from 'zod';
 import type { createDosingBodySchema } from './dosing.schema.js';
@@ -42,4 +43,12 @@ export async function createDosing(
       notes: body.notes ?? undefined,
     },
   });
+}
+
+export async function deleteDosing(prisma: PrismaClient, userId: string, dosingId: string) {
+  const dosing = await prisma.dosing.findFirst({
+    where: { id: dosingId, aquarium: { userId } },
+  });
+  if (!dosing) throw notFound('Dosagem não encontrada');
+  await prisma.dosing.delete({ where: { id: dosingId } });
 }

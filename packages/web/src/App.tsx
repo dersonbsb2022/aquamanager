@@ -21,19 +21,19 @@ function Shell() {
   }
   return (
     <div className="min-h-screen">
-      <header className="border-b border-slate-200 bg-white">
+      <header className="border-b border-border bg-card/80 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4">
-          <Link to="/" className="text-lg font-semibold text-sky-800">
+          <Link to="/" className="text-lg font-semibold text-primary">
             AquaManager
           </Link>
           <nav className="flex flex-wrap items-center gap-2 text-sm">
-            <Link className="rounded-md px-3 py-1.5 text-slate-700 hover:bg-slate-100" to="/">
+            <Link className="rounded-md px-3 py-1.5 text-muted-foreground hover:bg-accent hover:text-foreground" to="/">
               Dashboard
             </Link>
-            <Link className="rounded-md px-3 py-1.5 text-slate-700 hover:bg-slate-100" to="/test-parameters">
+            <Link className="rounded-md px-3 py-1.5 text-muted-foreground hover:bg-accent hover:text-foreground" to="/test-parameters">
               Parâmetros
             </Link>
-            <Link className="rounded-md px-3 py-1.5 text-slate-700 hover:bg-slate-100" to="/settings">
+            <Link className="rounded-md px-3 py-1.5 text-muted-foreground hover:bg-accent hover:text-foreground" to="/settings">
               Configurações
             </Link>
             <Button variant="outline" size="sm" type="button" onClick={() => logout()}>

@@ -1,4 +1,5 @@
 import type { PrismaClient } from '@prisma/client';
+import { conflict, notFound } from '../../shared/errors/app-error.js';
 import { buildMeta, offsetFromPage, paginationQuerySchema } from '../../shared/utils/pagination.js';
 import type { z } from 'zod';
 import type { createTestParameterBodySchema, updateTestParameterBodySchema } from './test-parameter.schema.js';
@@ -37,4 +38,16 @@ export async function updateTestParameter(prisma: PrismaClient, id: string, body
       description: body.description === undefined ? undefined : body.description,
     },
   });
+}
+
+export async function deleteTestParameter(prisma: PrismaClient, id: string) {
+  const existing = await prisma.testParameter.findUnique({ where: { id } });
+  if (!existing) throw notFound('Parâmetro não encontrado');
+
+  const inUse = await prisma.waterTestResult.count({ where: { testParameterId: id } });
+  if (inUse > 0) {
+    throw conflict('Este parâmetro já foi usado em testes de água e não pode ser excluído.');
+  }
+
+  await prisma.testParameter.delete({ where: { id } });
 }

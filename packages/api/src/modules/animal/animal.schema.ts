@@ -14,6 +14,9 @@ export const updateAnimalBodySchema = z.object({
   commonName: z.string().min(1).max(200).optional(),
   quantity: z.number().int().positive().optional(),
   notes: z.string().max(5000).optional().nullable(),
+  addedDate: z.coerce.date().optional(),
+  status: z.nativeEnum(AnimalStatus).optional(),
+  removedDate: z.coerce.date().optional().nullable(),
 });
 
 export const patchAnimalStatusSchema = z.object({

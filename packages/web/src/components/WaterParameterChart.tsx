@@ -49,21 +49,27 @@ export function WaterParameterChart({
           {showBand ? (
             <ReferenceArea y1={idealMin!} y2={idealMax!} fill="#22c55e" fillOpacity={0.08} />
           ) : null}
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="t" tick={{ fontSize: 11 }} />
-          <YAxis domain={[ymin, ymax]} tick={{ fontSize: 11 }} />
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(215 22% 22%)" />
+          <XAxis dataKey="t" tick={{ fontSize: 11, fill: 'hsl(215 16% 57%)' }} stroke="hsl(215 22% 22%)" />
+          <YAxis domain={[ymin, ymax]} tick={{ fontSize: 11, fill: 'hsl(215 16% 57%)' }} stroke="hsl(215 22% 22%)" />
           <Tooltip
             formatter={(value: number) => [value, 'Valor']}
             labelFormatter={(_, payload) => {
               const p = payload?.[0]?.payload as { testedAt?: string } | undefined;
               return p?.testedAt ? new Date(p.testedAt).toLocaleString('pt-BR') : '';
             }}
-            contentStyle={{ fontSize: 12 }}
+            contentStyle={{
+              fontSize: 12,
+              background: 'hsl(224 44% 8%)',
+              border: '1px solid hsl(215 22% 18%)',
+              borderRadius: '8px',
+              color: 'hsl(213 31% 91%)',
+            }}
           />
-          <Line type="monotone" dataKey="value" stroke="#0284c7" strokeWidth={2} dot />
+          <Line type="monotone" dataKey="value" stroke="hsl(199 89% 48%)" strokeWidth={2} dot={{ fill: 'hsl(199 89% 48%)' }} />
         </LineChart>
       </ResponsiveContainer>
-      <div className="mt-2 flex flex-wrap gap-3 text-xs text-slate-600">
+      <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
         {idealMin != null || idealMax != null ? (
           <span>
             Faixa ideal: {idealMin ?? '—'} a {idealMax ?? '—'}

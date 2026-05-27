@@ -40,8 +40,8 @@ export function RegisterPage() {
   return (
     <div className="mx-auto flex max-w-md flex-col gap-8 py-16">
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">Nova conta</h1>
-        <p className="text-sm text-slate-600">Cadastre-se para usar o AquaManager</p>
+        <h1 className="text-3xl font-bold text-foreground">Nova conta</h1>
+        <p className="text-sm text-muted-foreground">Cadastre-se para usar o AquaManager</p>
       </div>
       <Card>
         <CardHeader>
@@ -65,9 +65,9 @@ export function RegisterPage() {
             <Button type="submit" className="w-full" disabled={m.isPending}>
               {m.isPending ? 'Criando…' : 'Criar conta'}
             </Button>
-            <p className="text-center text-sm text-slate-600">
+            <p className="text-center text-sm text-muted-foreground">
               Já tem conta?{' '}
-              <Link className="font-medium text-sky-700 hover:underline" to="/login">
+              <Link className="font-medium text-primary hover:underline" to="/login">
                 Entrar
               </Link>
             </p>

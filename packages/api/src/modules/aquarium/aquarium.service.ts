@@ -11,6 +11,7 @@ type UpdateBody = z.infer<typeof updateAquariumBodySchema>;
 export type AquariumListItem = {
   id: string;
   name: string;
+  photoUrl: string | null;
   volumeLiters: number;
   waterType: string;
   isActive: boolean;
@@ -68,6 +69,7 @@ export async function listAquariums(
     return {
       id: a.id,
       name: a.name,
+      photoUrl: a.photoUrl,
       volumeLiters: a.volumeLiters,
       waterType: a.waterType,
       isActive: a.isActive,
@@ -104,7 +106,6 @@ export async function createAquarium(prisma: PrismaClient, userId: string, body:
       substrate: body.substrate ?? undefined,
       startDate: body.startDate ?? undefined,
       notes: body.notes ?? undefined,
-      photoUrl: body.photoUrl ?? undefined,
     },
   });
 }
@@ -153,7 +154,6 @@ export async function updateAquarium(prisma: PrismaClient, userId: string, id: s
       substrate: body.substrate === undefined ? undefined : body.substrate,
       startDate: body.startDate === undefined ? undefined : body.startDate,
       notes: body.notes === undefined ? undefined : body.notes,
-      photoUrl: body.photoUrl === undefined ? undefined : body.photoUrl,
     },
   });
 }

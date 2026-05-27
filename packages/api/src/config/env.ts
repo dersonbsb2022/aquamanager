@@ -20,6 +20,9 @@ const envSchema = z.object({
   JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET deve ter pelo menos 32 caracteres'),
   ACCESS_TOKEN_EXPIRES_IN: z.string().default('15m'),
   REFRESH_TOKEN_EXPIRES_IN: z.string().default('7d'),
+  /** Pasta absoluta ou relativa para imagens; padrão: packages/api/uploads */
+  UPLOAD_DIR: z.string().optional(),
+  MAX_UPLOAD_MB: z.coerce.number().int().positive().max(20).default(5),
 });
 
 export type Env = z.infer<typeof envSchema>;

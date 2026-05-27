@@ -16,7 +16,6 @@ export const createAquariumBodySchema = z.object({
   substrate: z.string().max(500).optional().nullable(),
   startDate: z.coerce.date().optional().nullable(),
   notes: z.string().max(5000).optional().nullable(),
-  photoUrl: z.string().url().max(2000).optional().nullable(),
 });
 
 export const updateAquariumBodySchema = createAquariumBodySchema.partial();

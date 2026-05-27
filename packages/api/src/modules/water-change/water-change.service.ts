@@ -1,5 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
 import { buildMeta, offsetFromPage, paginationQuerySchema } from '../../shared/utils/pagination.js';
+import { notFound } from '../../shared/errors/app-error.js';
 import { findOwnedAquarium } from '../../shared/middlewares/ownership.js';
 import { computePercentVolume } from '../../shared/utils/percent-volume.js';
 import type { z } from 'zod';
@@ -44,4 +45,12 @@ export async function createWaterChange(
       notes: body.notes ?? undefined,
     },
   });
+}
+
+export async function deleteWaterChange(prisma: PrismaClient, userId: string, waterChangeId: string) {
+  const wc = await prisma.waterChange.findFirst({
+    where: { id: waterChangeId, aquarium: { userId } },
+  });
+  if (!wc) throw notFound('TPA não encontrada');
+  await prisma.waterChange.delete({ where: { id: waterChangeId } });
 }

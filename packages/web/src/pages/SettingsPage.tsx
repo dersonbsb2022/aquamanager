@@ -39,11 +39,11 @@ export function SettingsPage() {
   return (
     <div className="mx-auto max-w-xl space-y-6">
       <div>
-        <Link className="text-sm text-sky-700 hover:underline" to="/">
+        <Link className="text-sm text-primary hover:underline" to="/">
           ← Dashboard
         </Link>
         <h2 className="mt-4 text-2xl font-semibold">Configurações</h2>
-        <p className="text-sm text-slate-600">Perfil do usuário</p>
+        <p className="text-sm text-muted-foreground">Perfil do usuário</p>
       </div>
 
       <Card>

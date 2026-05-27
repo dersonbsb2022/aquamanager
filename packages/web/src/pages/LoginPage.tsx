@@ -37,8 +37,8 @@ export function LoginPage() {
   return (
     <div className="mx-auto flex max-w-md flex-col gap-8 py-16">
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">AquaManager</h1>
-        <p className="text-sm text-slate-600">Entre para gerenciar seus aquários</p>
+        <h1 className="text-3xl font-bold text-foreground">AquaManager</h1>
+        <p className="text-sm text-muted-foreground">Entre para gerenciar seus aquários</p>
       </div>
       <Card>
         <CardHeader>
@@ -58,9 +58,9 @@ export function LoginPage() {
             <Button type="submit" className="w-full" disabled={m.isPending}>
               {m.isPending ? 'Entrando…' : 'Entrar'}
             </Button>
-            <p className="text-center text-sm text-slate-600">
+            <p className="text-center text-sm text-muted-foreground">
               Novo aqui?{' '}
-              <Link className="font-medium text-sky-700 hover:underline" to="/register">
+              <Link className="font-medium text-primary hover:underline" to="/register">
                 Criar conta
               </Link>
             </p>

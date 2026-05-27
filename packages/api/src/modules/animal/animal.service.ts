@@ -2,6 +2,7 @@ import type { PrismaClient } from '@prisma/client';
 import { notFound } from '../../shared/errors/app-error.js';
 import { buildMeta, offsetFromPage, paginationQuerySchema } from '../../shared/utils/pagination.js';
 import { findOwnedAquarium } from '../../shared/middlewares/ownership.js';
+import { deletePhotoFile } from '../../shared/uploads/storage.js';
 import type { z } from 'zod';
 import type { createAnimalBodySchema, patchAnimalStatusSchema, updateAnimalBodySchema } from './animal.schema.js';
 
@@ -59,7 +60,15 @@ export async function updateAnimal(
   if (!animal) throw notFound('Animal não encontrado');
   return prisma.animal.update({
     where: { id: animalId },
-    data: body,
+    data: {
+      speciesName: body.speciesName,
+      commonName: body.commonName,
+      quantity: body.quantity,
+      notes: body.notes === undefined ? undefined : body.notes,
+      addedDate: body.addedDate,
+      status: body.status,
+      removedDate: body.removedDate === undefined ? undefined : body.removedDate,
+    },
   });
 }
 
@@ -80,4 +89,13 @@ export async function patchAnimalStatus(
       removedDate: body.removedDate ?? undefined,
     },
   });
+}
+
+export async function deleteAnimal(prisma: PrismaClient, userId: string, animalId: string) {
+  const animal = await prisma.animal.findFirst({
+    where: { id: animalId, aquarium: { userId } },
+  });
+  if (!animal) throw notFound('Animal não encontrado');
+  if (animal.photoUrl) await deletePhotoFile(animal.photoUrl);
+  await prisma.animal.delete({ where: { id: animalId } });
 }

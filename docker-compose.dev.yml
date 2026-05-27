@@ -18,6 +18,8 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-access-secret-min-32-chars!!}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-refresh-secret-min-32!!}
       NODE_ENV: development
+    volumes:
+      - api_uploads:/app/uploads
     deploy:
       replicas: 1
 
@@ -37,3 +39,6 @@ networks:
     driver: bridge
   frontend:
     driver: bridge
+
+volumes:
+  api_uploads:

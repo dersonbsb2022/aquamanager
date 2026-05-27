@@ -8,6 +8,7 @@ import { Button } from '../components/ui/button.js';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card.js';
 import { Input } from '../components/ui/input.js';
 import { Label } from '../components/ui/label.js';
+import { defaultDatetimeLocal, parseDatetimeLocal } from '../lib/datetimeLocal.js';
 
 export function NewWaterTestPage() {
   const { aquariumId } = useParams<{ aquariumId: string }>();
@@ -26,6 +27,7 @@ export function NewWaterTestPage() {
   });
 
   const [selected, setSelected] = useState<Record<string, string>>({});
+  const [testedAtLocal, setTestedAtLocal] = useState(defaultDatetimeLocal);
 
   const items = tpQ.data?.items ?? [];
 
@@ -63,7 +65,14 @@ export function NewWaterTestPage() {
       return;
     }
 
+    const testedAtParsed = parseDatetimeLocal(testedAtLocal);
+    if (!testedAtParsed) {
+      alert('Data e hora do teste inválidas.');
+      return;
+    }
+
     m.mutate({
+      testedAt: testedAtParsed.toISOString(),
       notes: typeof notesRaw === 'string' && notesRaw.length > 0 ? notesRaw : null,
       results,
     });
@@ -74,12 +83,13 @@ export function NewWaterTestPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <Link className="text-sm text-sky-700 hover:underline" to={`/aquariums/${id}`}>
+        <Link className="text-sm text-primary hover:underline" to={`/aquariums/${id}`}>
           ← Voltar ao aquário
         </Link>
         <h2 className="mt-4 text-2xl font-semibold">Novo teste de água</h2>
-        <p className="text-sm text-slate-600">
-          Escolha quais parâmetros mediu e informe os valores. Faixas ideais dependem do tipo de água do aquário.
+        <p className="text-sm text-muted-foreground">
+          Escolha quais parâmetros mediu e informe os valores. Use a data em que o teste foi feito — o histórico e
+          os gráficos usam essa data, não o dia em que você lança no app.
         </p>
       </div>
 
@@ -89,6 +99,22 @@ export function NewWaterTestPage() {
         </CardHeader>
         <CardContent>
           <form className="space-y-6" onSubmit={onSubmit}>
+            <div className="space-y-2 rounded-lg border border-border bg-muted/40 p-4">
+              <Label htmlFor="testedAt">Quando o teste foi feito</Label>
+              <Input
+                id="testedAt"
+                name="testedAt"
+                type="datetime-local"
+                required
+                value={testedAtLocal}
+                onChange={(e) => setTestedAtLocal(e.target.value)}
+                className="max-w-xs"
+              />
+              <p className="text-xs text-muted-foreground">
+                Padrão: agora. Ajuste se mediu em outro dia e está lançando depois.
+              </p>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="notes">Observações</Label>
               <Input id="notes" name="notes" placeholder="Opcional" />
@@ -98,7 +124,7 @@ export function NewWaterTestPage() {
               {items.map((tp) => {
                 const on = Object.prototype.hasOwnProperty.call(selected, tp.id);
                 return (
-                  <div key={tp.id} className="flex flex-wrap items-center gap-3 rounded-md border border-slate-200 p-3">
+                  <div key={tp.id} className="flex flex-wrap items-center gap-3 rounded-md border border-border p-3">
                     <label className="flex min-w-[180px] flex-1 items-center gap-2 text-sm">
                       <input
                         type="checkbox"
@@ -106,7 +132,7 @@ export function NewWaterTestPage() {
                         onChange={(ev) => toggle(tp.id, ev.target.checked)}
                       />
                       <span>
-                        <strong>{tp.name}</strong> <span className="text-slate-500">({tp.unit})</span>
+                        <strong>{tp.name}</strong> <span className="text-muted-foreground">({tp.unit})</span>
                       </span>
                     </label>
                     <Input

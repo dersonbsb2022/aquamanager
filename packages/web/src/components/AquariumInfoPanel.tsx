@@ -1,8 +1,12 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Pencil, Trash2 } from 'lucide-react';
-import { apiFetch } from '../services/api.js';
+import { ImageOff, ImagePlus } from 'lucide-react';
+import { RowActions, RowIconButton, rowIconClass } from './row-actions.js';
+import { cn } from '../lib/utils.js';
+import { apiFetch, apiUpload } from '../services/api.js';
 import type { AccessToken, AquariumNote, Paginated } from '../types/api.js';
+import { AquariumPhoto } from './AquariumPhoto.js';
+import { PhotoCropDialog } from './PhotoCropDialog.js';
 import { Button } from './ui/button.js';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card.js';
 import { Input } from './ui/input.js';
@@ -10,6 +14,7 @@ import { Label } from './ui/label.js';
 
 type AquariumInfo = {
   id: string;
+  name: string;
   photoUrl: string | null;
   targetTempMin: number | null;
   targetTempMax: number | null;
@@ -31,6 +36,9 @@ export function AquariumInfoPanel({
   const [showAllNotes, setShowAllNotes] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteEditText, setNoteEditText] = useState('');
+  const [cropOpen, setCropOpen] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+  const [cropSourceFile, setCropSourceFile] = useState<File | null>(null);
 
   useEffect(() => {
     setTempMin(aquarium.targetTempMin != null ? String(aquarium.targetTempMin) : '');
@@ -75,6 +83,46 @@ export function AquariumInfoPanel({
       await qc.invalidateQueries({ queryKey: ['aquarium', aquarium.id] });
     },
   });
+
+  const uploadPhotoM = useMutation({
+    mutationFn: (file: File) =>
+      apiUpload<{ photoUrl: string | null }>(`/aquariums/${aquarium.id}/photo`, file, { token }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['aquarium', aquarium.id] });
+      await qc.invalidateQueries({ queryKey: ['aquariums'] });
+    },
+  });
+
+  const deletePhotoM = useMutation({
+    mutationFn: () => apiFetch<{ photoUrl: string | null }>(`/aquariums/${aquarium.id}/photo`, { method: 'DELETE', token }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['aquarium', aquarium.id] });
+      await qc.invalidateQueries({ queryKey: ['aquariums'] });
+    },
+  });
+
+  function closeCropDialog() {
+    if (cropImageSrc?.startsWith('blob:')) URL.revokeObjectURL(cropImageSrc);
+    setCropImageSrc(null);
+    setCropSourceFile(null);
+    setCropOpen(false);
+  }
+
+  function onPhotoSelected(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (cropImageSrc?.startsWith('blob:')) URL.revokeObjectURL(cropImageSrc);
+    setCropImageSrc(URL.createObjectURL(file));
+    setCropSourceFile(file);
+    setCropOpen(true);
+  }
+
+  function onCropConfirm(file: File) {
+    uploadPhotoM.mutate(file, {
+      onSuccess: () => closeCropDialog(),
+    });
+  }
 
   const addNoteM = useMutation({
     mutationFn: (content: string) =>
@@ -158,13 +206,54 @@ export function AquariumInfoPanel({
       <CardHeader>
         <CardTitle>Informações</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6 text-sm text-slate-700">
-        {aquarium.photoUrl ? (
-          <img alt="" src={aquarium.photoUrl} className="max-h-48 rounded-lg border" />
-        ) : null}
+      <CardContent className="space-y-6 text-sm text-muted-foreground">
+        <div className="space-y-4 rounded-lg border border-border bg-muted/40 p-4">
+          <p className="font-medium text-foreground">Foto do aquário</p>
+          <div className="flex flex-col items-center gap-4 py-1">
+            <AquariumPhoto src={aquarium.photoUrl} name={aquarium.name} variant="hero" />
+            <RowActions className="justify-center">
+              <label
+                title={uploadPhotoM.isPending ? 'Aguarde…' : aquarium.photoUrl ? 'Trocar foto' : 'Enviar foto'}
+                className={rowIconClass(
+                  'edit',
+                  cn(!aquarium.isActive || uploadPhotoM.isPending ? 'pointer-events-none opacity-40' : ''),
+                )}
+              >
+                <ImagePlus className="h-4 w-4" aria-hidden />
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="sr-only"
+                  disabled={!aquarium.isActive || uploadPhotoM.isPending}
+                  onChange={onPhotoSelected}
+                />
+                <span className="sr-only">{aquarium.photoUrl ? 'Trocar foto' : 'Enviar foto'}</span>
+              </label>
+              {aquarium.photoUrl ? (
+                <RowIconButton
+                  variant="neutral"
+                  icon={ImageOff}
+                  title="Remover foto"
+                  loading={deletePhotoM.isPending}
+                  disabled={!aquarium.isActive}
+                  onClick={() => {
+                    if (window.confirm('Remover a foto do aquário?')) deletePhotoM.mutate();
+                  }}
+                />
+              ) : null}
+            </RowActions>
+            <p className="text-center text-xs text-muted-foreground">JPEG, PNG, WebP ou GIF — até 5 MB.</p>
+            {uploadPhotoM.isError ? (
+              <p className="text-center text-xs text-red-600">{(uploadPhotoM.error as Error).message}</p>
+            ) : null}
+            {deletePhotoM.isError ? (
+              <p className="text-center text-xs text-red-600">{(deletePhotoM.error as Error).message}</p>
+            ) : null}
+          </div>
+        </div>
 
-        <div className="space-y-3 rounded-lg border border-slate-100 bg-slate-50 p-4">
-          <p className="font-medium text-slate-900">Temperatura alvo (°C)</p>
+        <div className="space-y-3 rounded-lg border border-border bg-muted/40 p-4">
+          <p className="font-medium text-foreground">Temperatura alvo (°C)</p>
           <form className="space-y-3" onSubmit={onSaveTemp}>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
@@ -201,7 +290,7 @@ export function AquariumInfoPanel({
               </Button>
             ) : (
               <>
-                <p className="text-xs font-medium text-emerald-700">Temperatura alvo salva.</p>
+                <p className="text-xs font-medium text-emerald-400">Temperatura alvo salva.</p>
                 <Button type="button" variant="outline" size="sm" disabled={!aquarium.isActive} onClick={() => setEditingTemp(true)}>
                   Editar temperatura
                 </Button>
@@ -212,25 +301,25 @@ export function AquariumInfoPanel({
 
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-2">
-            <p className="font-medium text-slate-900">Notas</p>
+            <p className="font-medium text-foreground">Notas</p>
             {totalNotes > 0 ? (
-              <span className="text-xs text-slate-500">{totalNotes} no histórico</span>
+              <span className="text-xs text-muted-foreground">{totalNotes} no histórico</span>
             ) : null}
           </div>
 
-          {notesQ.isLoading ? <p className="text-slate-500">Carregando notas…</p> : null}
+          {notesQ.isLoading ? <p className="text-muted-foreground">Carregando notas…</p> : null}
 
           {notes.length === 0 && !notesQ.isLoading ? (
-            <p className="text-slate-500">Nenhuma nota registrada ainda.</p>
+            <p className="text-muted-foreground">Nenhuma nota registrada ainda.</p>
           ) : (
             <ul className="space-y-2">
               {notes.map((n) => (
-                <li key={n.id} className="rounded-md border border-slate-200 bg-white p-3">
+                <li key={n.id} className="rounded-md border border-border bg-card p-3">
                   {editingNoteId === n.id ? (
                     <div className="space-y-2">
                       <textarea
                         rows={4}
-                        className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+                        className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         value={noteEditText}
                         onChange={(e) => setNoteEditText(e.target.value)}
                       />
@@ -248,34 +337,18 @@ export function AquariumInfoPanel({
                     </div>
                   ) : (
                     <>
-                      <p className="whitespace-pre-wrap text-slate-800">{n.content}</p>
+                      <p className="whitespace-pre-wrap text-foreground">{n.content}</p>
                       <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-xs text-slate-500">{new Date(n.createdAt).toLocaleString('pt-BR')}</p>
-                        <div className="flex gap-1">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 px-2"
-                            title="Editar"
-                            onClick={() => startEditNote(n)}
-                          >
-                            <Pencil className="h-4 w-4" aria-hidden />
-                            <span className="sr-only">Editar</span>
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 px-2 text-red-700 hover:bg-red-50 hover:text-red-800"
-                            title="Excluir"
-                            disabled={deleteNoteM.isPending}
+                        <p className="text-xs text-muted-foreground">{new Date(n.createdAt).toLocaleString('pt-BR')}</p>
+                        <RowActions>
+                          <RowIconButton title="Editar nota" onClick={() => startEditNote(n)} />
+                          <RowIconButton
+                            variant="delete"
+                            title="Excluir nota"
+                            loading={deleteNoteM.isPending}
                             onClick={() => requestDeleteNote(n)}
-                          >
-                            <Trash2 className="h-4 w-4" aria-hidden />
-                            <span className="sr-only">Excluir</span>
-                          </Button>
-                        </div>
+                          />
+                        </RowActions>
                       </div>
                     </>
                   )}
@@ -295,12 +368,12 @@ export function AquariumInfoPanel({
             </Button>
           ) : null}
 
-          <form className="space-y-2 border-t border-slate-100 pt-4" onSubmit={onAddNote}>
+          <form className="space-y-2 border-t border-border pt-4" onSubmit={onAddNote}>
             <Label htmlFor="newNote">Nova nota</Label>
             <textarea
               id="newNote"
               rows={3}
-              className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 disabled:opacity-50"
+              className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
               placeholder="Ex: faltou luz durante as 21h…"
               value={noteDraft}
               onChange={(e) => setNoteDraft(e.target.value)}
@@ -315,6 +388,16 @@ export function AquariumInfoPanel({
           </form>
         </div>
       </CardContent>
+
+      <PhotoCropDialog
+        open={cropOpen}
+        imageSrc={cropImageSrc}
+        sourceFile={cropSourceFile}
+        title="Foto do aquário"
+        confirming={uploadPhotoM.isPending}
+        onClose={closeCropDialog}
+        onConfirm={onCropConfirm}
+      />
     </Card>
   );
 }

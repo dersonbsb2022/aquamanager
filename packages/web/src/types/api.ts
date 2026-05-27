@@ -15,6 +15,7 @@ export type WaterType = 'FRESHWATER' | 'SALTWATER' | 'BRACKISH';
 export type AquariumListItem = {
   id: string;
   name: string;
+  photoUrl: string | null;
   volumeLiters: number;
   waterType: WaterType;
   isActive: boolean;
@@ -68,6 +69,7 @@ export type Animal = {
   addedDate: string;
   removedDate: string | null;
   notes: string | null;
+  photoUrl: string | null;
 };
 
 export type WaterChange = {
