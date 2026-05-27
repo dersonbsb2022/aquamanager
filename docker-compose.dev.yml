@@ -1,0 +1,39 @@
+# Uso local (docker compose, sem Swarm):
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+#
+# Substitui imagens pré-construídas por build local e expõe Postgres na porta 5432.
+
+services:
+  postgres:
+    ports:
+      - "5432:5432"
+    deploy: {}
+
+  api:
+    build:
+      context: ./packages/api
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-aquamanager}:${DB_PASSWORD:-changeme}@postgres:5432/${DB_NAME:-aquamanager}
+      JWT_SECRET: ${JWT_SECRET:-dev-access-secret-min-32-chars!!}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-refresh-secret-min-32!!}
+      NODE_ENV: development
+    deploy:
+      replicas: 1
+
+  web:
+    build:
+      context: ./packages/web
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:3333}
+    deploy:
+      replicas: 1
+    ports:
+      - "8080:80"
+
+networks:
+  backend:
+    driver: bridge
+  frontend:
+    driver: bridge

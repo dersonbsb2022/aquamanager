@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 0.5rem;
+    --brand: 199 89% 44%;
+    --brand-foreground: 0 0% 98%;
+    --muted: 210 40% 96%;
+  }
+}

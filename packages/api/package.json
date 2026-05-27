@@ -1,0 +1,44 @@
+{
+  "name": "@aquamanager/api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "test": "vitest run test/range.test.ts",
+    "test:integration": "vitest run test/api.integration.test.ts",
+    "test:watch": "vitest test/range.test.ts",
+    "prisma:generate": "dotenv -e ../../.env -- prisma generate",
+    "prisma:migrate": "dotenv -e ../../.env -- prisma migrate dev",
+    "prisma:migrate:deploy": "dotenv -e ../../.env -- prisma migrate deploy",
+    "prisma:studio": "dotenv -e ../../.env -- prisma studio",
+    "prisma:seed": "dotenv -e ../../.env -- prisma db seed"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.0.2",
+    "@prisma/client": "^6.8.2",
+    "bcryptjs": "^3.0.2",
+    "dotenv": "^16.6.1",
+    "fastify": "^5.3.3",
+    "fastify-plugin": "^5.0.1",
+    "jsonwebtoken": "^9.0.2",
+    "zod": "^3.24.4"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/node": "^22.15.21",
+    "@types/supertest": "^6.0.3",
+    "dotenv-cli": "^7.4.4",
+    "prisma": "^6.8.2",
+    "supertest": "^7.1.1",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.4"
+  }
+}

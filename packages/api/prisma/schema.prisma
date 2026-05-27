@@ -1,0 +1,216 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== AUTH ====================
+
+model User {
+  id            String    @id @default(uuid())
+  name          String
+  email         String    @unique
+  passwordHash  String    @map("password_hash")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  aquariums     Aquarium[]
+
+  @@map("users")
+}
+
+// ==================== AQUÁRIO ====================
+
+enum WaterType {
+  FRESHWATER
+  SALTWATER
+  BRACKISH
+}
+
+model Aquarium {
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  name          String
+  volumeLiters  Float     @map("volume_liters")
+  waterType     WaterType @default(FRESHWATER) @map("water_type")
+  targetTempMin Float?    @map("target_temp_min")
+  targetTempMax Float?    @map("target_temp_max")
+  substrate     String?
+  startDate     DateTime? @map("start_date")
+  notes         String?
+  photoUrl      String?   @map("photo_url")
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  animals       Animal[]
+  waterTests    WaterTest[]
+  waterChanges  WaterChange[]
+  equipments    Equipment[]
+  dosings       Dosing[]
+  aquariumNotes AquariumNote[]
+
+  @@map("aquariums")
+}
+
+model AquariumNote {
+  id          String   @id @default(uuid())
+  aquariumId  String   @map("aquarium_id")
+  content     String
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  aquarium    Aquarium @relation(fields: [aquariumId], references: [id], onDelete: Cascade)
+
+  @@map("aquarium_notes")
+}
+
+// ==================== ANIMAIS ====================
+
+enum AnimalStatus {
+  ALIVE
+  DEAD
+  DONATED
+  TRANSFERRED
+}
+
+model Animal {
+  id            String       @id @default(uuid())
+  aquariumId    String       @map("aquarium_id")
+  speciesName   String       @map("species_name")
+  commonName    String       @map("common_name")
+  quantity      Int          @default(1)
+  status        AnimalStatus @default(ALIVE)
+  addedDate     DateTime     @default(now()) @map("added_date")
+  removedDate   DateTime?    @map("removed_date")
+  notes         String?
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  aquarium      Aquarium     @relation(fields: [aquariumId], references: [id], onDelete: Cascade)
+
+  @@map("animals")
+}
+
+// ==================== TESTES DE ÁGUA ====================
+
+model TestParameter {
+  id            String   @id @default(uuid())
+  name          String   @unique
+  unit          String
+  description   String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  results       WaterTestResult[]
+  ranges        ParameterRange[]
+
+  @@map("test_parameters")
+}
+
+model ParameterRange {
+  id              String    @id @default(uuid())
+  testParameterId String    @map("test_parameter_id")
+  waterType       WaterType @map("water_type")
+  idealMin        Float?    @map("ideal_min")
+  idealMax        Float?    @map("ideal_max")
+
+  testParameter   TestParameter @relation(fields: [testParameterId], references: [id], onDelete: Cascade)
+
+  @@unique([testParameterId, waterType])
+  @@map("parameter_ranges")
+}
+
+model WaterTest {
+  id            String   @id @default(uuid())
+  aquariumId    String   @map("aquarium_id")
+  testedAt      DateTime @default(now()) @map("tested_at")
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  aquarium      Aquarium          @relation(fields: [aquariumId], references: [id], onDelete: Cascade)
+  results       WaterTestResult[]
+
+  @@map("water_tests")
+}
+
+model WaterTestResult {
+  id              String        @id @default(uuid())
+  waterTestId     String        @map("water_test_id")
+  testParameterId String        @map("test_parameter_id")
+  value           Float
+  isWithinRange   Boolean?      @map("is_within_range")
+
+  waterTest       WaterTest     @relation(fields: [waterTestId], references: [id], onDelete: Cascade)
+  testParameter   TestParameter @relation(fields: [testParameterId], references: [id])
+
+  @@unique([waterTestId, testParameterId])
+  @@map("water_test_results")
+}
+
+// ==================== TROCA PARCIAL DE ÁGUA (TPA) ====================
+
+model WaterChange {
+  id                String   @id @default(uuid())
+  aquariumId        String   @map("aquarium_id")
+  changedAt         DateTime @default(now()) @map("changed_at")
+  volumeLiters      Float    @map("volume_liters")
+  percentVolume     Float?   @map("percent_volume")
+  usedDechlorinator Boolean  @default(false) @map("used_dechlorinator")
+  notes             String?
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  aquarium          Aquarium @relation(fields: [aquariumId], references: [id], onDelete: Cascade)
+
+  @@map("water_changes")
+}
+
+// ==================== EQUIPAMENTOS ====================
+
+enum EquipmentType {
+  FILTER
+  HEATER
+  LIGHT
+  CO2
+  PUMP
+  SKIMMER
+  UV_STERILIZER
+  OTHER
+}
+
+model Equipment {
+  id                String        @id @default(uuid())
+  aquariumId        String        @map("aquarium_id")
+  type              EquipmentType
+  brand             String?
+  model             String?
+  installedAt       DateTime?     @map("installed_at")
+  lastMaintenanceAt DateTime?     @map("last_maintenance_at")
+  nextMaintenanceAt DateTime?     @map("next_maintenance_at")
+  notes             String?
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  aquarium          Aquarium      @relation(fields: [aquariumId], references: [id], onDelete: Cascade)
+
+  @@map("equipments")
+}
+
+// ==================== DOSAGEM DE PRODUTOS ====================
+
+model Dosing {
+  id            String   @id @default(uuid())
+  aquariumId    String   @map("aquarium_id")
+  productName   String   @map("product_name")
+  amountMl      Float    @map("amount_ml")
+  dosedAt       DateTime @default(now()) @map("dosed_at")
+  purpose       String?
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  aquarium      Aquarium @relation(fields: [aquariumId], references: [id], onDelete: Cascade)
+
+  @@map("dosings")
+}

@@ -1,0 +1,26 @@
+{
+  "name": "aquamanager",
+  "private": true,
+  "workspaces": [
+    "packages/api",
+    "packages/web"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c blue,green \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:api": "npm run dev --workspace=@aquamanager/api",
+    "dev:web": "npm run dev --workspace=@aquamanager/web",
+    "api": "npm run dev:api",
+    "web": "npm run dev:web",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspace=@aquamanager/api",
+    "db:migrate": "npm run prisma:migrate --workspace=@aquamanager/api",
+    "db:seed": "npm run prisma:seed --workspace=@aquamanager/api",
+    "db:studio": "npm run prisma:studio --workspace=@aquamanager/api"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.0"
+  }
+}

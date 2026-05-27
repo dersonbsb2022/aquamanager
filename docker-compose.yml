@@ -1,0 +1,67 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${DB_USER:-aquamanager}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+      POSTGRES_DB: ${DB_NAME:-aquamanager}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - backend
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  api:
+    image: aquamanager/api:latest
+    build:
+      context: ./packages/api
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-aquamanager}:${DB_PASSWORD:-changeme}@postgres:5432/${DB_NAME:-aquamanager}
+      JWT_SECRET: ${JWT_SECRET:-super-secret-change-me}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-super-refresh-change-me}
+      PORT: 3333
+      NODE_ENV: production
+    ports:
+      - "3333:3333"
+    networks:
+      - backend
+    depends_on:
+      - postgres
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+      update_config:
+        parallelism: 1
+        delay: 10s
+
+  web:
+    image: aquamanager/web:latest
+    build:
+      context: ./packages/web
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:3333}
+    ports:
+      - "80:80"
+    networks:
+      - frontend
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+
+networks:
+  backend:
+    driver: overlay
+  frontend:
+    driver: overlay
+
+volumes:
+  pgdata:
