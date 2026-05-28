@@ -17,7 +17,7 @@ services:
         condition: on-failure
 
   api:
-    image: ${API_IMAGE:-ghcr.io/dersonbsb2022/aquamanager-api:latest}
+    image: ${API_IMAGE:-ghcr.io/dersonbsb2022/aquamanager:api-latest}
     build:
       context: ./packages/api
       dockerfile: Dockerfile
@@ -52,7 +52,7 @@ services:
       start_period: 40s
 
   web:
-    image: ${WEB_IMAGE:-ghcr.io/dersonbsb2022/aquamanager-web:latest}
+    image: ${WEB_IMAGE:-ghcr.io/dersonbsb2022/aquamanager:web-latest}
     build:
       context: ./packages/web
       dockerfile: Dockerfile

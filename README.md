@@ -63,10 +63,10 @@ npm run dev:web
 | **CI** (`.github/workflows/ci.yml`) | push/PR em `main` | `npm ci`, build, testes, build das imagens Docker |
 | **Docker Publish** (`.github/workflows/docker-publish.yml`) | push em `main`, tags `v*` ou manual | Publica imagens no **GHCR** |
 
-Imagens geradas (exemplo):
+Imagens geradas (um pacote GHCR `aquamanager`, duas tags):
 
-- `ghcr.io/dersonbsb2022/aquamanager-api:latest`
-- `ghcr.io/dersonbsb2022/aquamanager-web:latest`
+- `ghcr.io/dersonbsb2022/aquamanager:api-latest`
+- `ghcr.io/dersonbsb2022/aquamanager:web-latest`
 
 No repositório GitHub: **Settings → Actions → General → Workflow permissions** → permitir leitura/escrita de pacotes (para publicar no GHCR).
 
@@ -86,7 +86,10 @@ Postgres na porta **5432**; frontend em **8080**.
 
 1. Edite `docker-compose.stack.yml` e substitua todos os valores `ALTERE_*` (senha do banco, JWT, etc.). A `DATABASE_URL` da API deve usar a **mesma** senha do `POSTGRES_PASSWORD`.
 2. No **Portainer**: *Stacks* → *Add stack* → cole o conteúdo do `docker-compose.stack.yml` → *Deploy*.
-3. Se os pacotes no GHCR forem privados, configure o registry `ghcr.io` no Portainer (usuário GitHub + PAT com `read:packages`).
+3. **Registry no Portainer** (pacote GHCR costuma nascer privado):
+   - *Registries* → *Add registry* → URL `ghcr.io`, usuário GitHub, senha = PAT com `read:packages`
+   - Ao implantar a stack, use autenticação de registry (ou torne o pacote **Public** em GitHub → Packages → `aquamanager`)
+   - No servidor: `docker pull ghcr.io/dersonbsb2022/aquamanager:api-latest` deve funcionar antes do deploy
 
 Via CLI (opcional):
 

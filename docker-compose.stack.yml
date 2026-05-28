@@ -3,12 +3,17 @@
 # Edite os valores marcados com ALTERE_* diretamente neste arquivo antes de implantar.
 # O Portainer não lê arquivo .env — tudo precisa estar aqui no YAML.
 #
-# Imagens (GitHub Actions → GHCR): push em main publica :latest
-#   ghcr.io/dersonbsb2022/aquamanager-api:latest
-#   ghcr.io/dersonbsb2022/aquamanager-web:latest
+# Imagens (GitHub Actions → GHCR, pacote único "aquamanager"):
+#   ghcr.io/dersonbsb2022/aquamanager:api-latest
+#   ghcr.io/dersonbsb2022/aquamanager:web-latest
 #
-# No Portainer: Stacks → Add stack → Web editor → cole este arquivo → Deploy
-# Registries: adicione credencial ghcr.io se os pacotes forem privados.
+# Portainer — obrigatório se o pacote for PRIVADO:
+#   1) Registries → Add registry → Custom → ghcr.io
+#   2) Username: seu usuário GitHub | Password: PAT com read:packages
+#   3) Na stack, marque usar registry / deploy com autenticação
+# Ou torne o pacote público: github.com → Packages → aquamanager → Package settings → Public
+#
+# Teste no servidor: docker pull ghcr.io/dersonbsb2022/aquamanager:api-latest
 
 version: "3.8"
 
@@ -31,7 +36,7 @@ services:
         condition: on-failure
 
   api:
-    image: ghcr.io/dersonbsb2022/aquamanager-api:latest
+    image: ghcr.io/dersonbsb2022/aquamanager:api-latest
     environment:
       # Use a mesma senha definida em POSTGRES_PASSWORD acima
       DATABASE_URL: postgresql://aquamanager:ALTERE_SENHA_DO_BANCO@postgres:5432/aquamanager
@@ -54,7 +59,7 @@ services:
         delay: 10s
 
   web:
-    image: ghcr.io/dersonbsb2022/aquamanager-web:latest
+    image: ghcr.io/dersonbsb2022/aquamanager:web-latest
     ports:
       - target: 80
         published: 80

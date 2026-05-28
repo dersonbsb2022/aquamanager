@@ -12,6 +12,8 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
+  # Um pacote no GHCR (Packages → aquamanager), duas tags: api-latest e web-latest
+  IMAGE_NAME: ghcr.io/dersonbsb2022/aquamanager
 
 jobs:
   build-and-push:
@@ -23,10 +25,12 @@ jobs:
           - name: api
             context: packages/api
             dockerfile: packages/api/Dockerfile
+            tag: api-latest
             vite_api_url: ''
           - name: web
             context: packages/web
             dockerfile: packages/web/Dockerfile
+            tag: web-latest
             vite_api_url: ''
 
     steps:
@@ -47,13 +51,10 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.name }}
+          images: ${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=latest,enable={{ is_default_branch }}
-            type=ref,event=branch
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,prefix=
+            type=raw,value=${{ matrix.tag }}
+            type=sha,prefix=${{ matrix.name }}-
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -67,3 +68,6 @@ jobs:
             VITE_API_URL=${{ matrix.vite_api_url }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Imagem publicada
+        run: echo "${{ env.IMAGE_NAME }}:${{ matrix.tag }}"
