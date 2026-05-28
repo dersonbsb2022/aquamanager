@@ -1,9 +1,7 @@
 # Stack Docker Swarm / Portainer + Traefik (rede netsrv)
+# Uma imagem só: ghcr.io/dersonbsb2022/aquamanager:latest (API + web + nginx)
 #
 # Edite ALTERE_* e o Host do Traefik antes de implantar.
-# Imagens: ghcr.io/dersonbsb2022/aquamanager-api:latest | aquamanager-web:latest
-#
-# O nginx do serviço web faz proxy de /api e /uploads para a API (mesmo host).
 
 version: "3.8"
 
@@ -27,31 +25,19 @@ services:
         condition: on-failure
         delay: 5s
 
-  api:
-    image: ghcr.io/dersonbsb2022/aquamanager-api:latest
+  aquamanager:
+    image: ghcr.io/dersonbsb2022/aquamanager:latest
     environment:
       DATABASE_URL: postgresql://aquamanager:ALTERE_SENHA_DO_BANCO@postgres:5432/aquamanager
       JWT_SECRET: ALTERE_JWT_SECRET_MINIMO_32_CARACTERES
       JWT_REFRESH_SECRET: ALTERE_JWT_REFRESH_MINIMO_32_CARACTERES
       PORT: "3333"
       NODE_ENV: production
-      UPLOAD_DIR: /app/uploads
+      UPLOAD_DIR: /app/api/uploads
       MAX_UPLOAD_MB: "5"
       TZ: America/Sao_Paulo
     volumes:
-      - api_uploads:/app/uploads
-    networks:
-      - netsrv
-    deploy:
-      replicas: 1
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-
-  web:
-    image: ghcr.io/dersonbsb2022/aquamanager-web:latest
-    environment:
-      TZ: America/Sao_Paulo
+      - app_uploads:/app/api/uploads
     networks:
       - netsrv
     deploy:
@@ -67,9 +53,6 @@ services:
       - traefik.http.routers.aquamanager.tls.certresolver=letsencryptresolver
       - traefik.http.routers.aquamanager.service=aquamanager
       - traefik.http.services.aquamanager.loadbalancer.server.port=80
-      # Opcional — basic auth (mesmo padrão do aquarium-light):
-      # - traefik.http.routers.aquamanager.middlewares=aquamanager-auth@docker
-      # - traefik.http.middlewares.aquamanager-auth.basicauth.users=usuario:$$2y$$...
 
 networks:
   netsrv:
@@ -78,4 +61,4 @@ networks:
 
 volumes:
   pgdata:
-  api_uploads:
+  app_uploads:

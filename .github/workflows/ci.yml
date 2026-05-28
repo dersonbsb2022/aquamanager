@@ -48,25 +48,14 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build API image
+      - name: Build image (API + web)
         uses: docker/build-push-action@v6
         with:
-          context: packages/api
-          file: packages/api/Dockerfile
+          context: .
+          file: Dockerfile
           push: false
           load: true
-          tags: aquamanager-api:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build Web image
-        uses: docker/build-push-action@v6
-        with:
-          context: packages/web
-          file: packages/web/Dockerfile
-          push: false
-          load: true
-          tags: aquamanager-web:ci
+          tags: aquamanager:ci
           build-args: |
             VITE_API_URL=
           cache-from: type=gha

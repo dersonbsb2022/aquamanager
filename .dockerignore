@@ -1,0 +1,11 @@
+node_modules
+**/node_modules
+.git
+.github
+dist
+**/dist
+packages/api/uploads
+*.md
+.env
+.env.*
+!/.env.prod.example

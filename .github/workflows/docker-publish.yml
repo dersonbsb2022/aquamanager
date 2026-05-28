@@ -12,23 +12,11 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
+  IMAGE: ghcr.io/dersonbsb2022/aquamanager
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: api
-            context: packages/api
-            dockerfile: packages/api/Dockerfile
-            vite_api_url: ''
-          - name: web
-            context: packages/web
-            dockerfile: packages/web/Dockerfile
-            vite_api_url: ''
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -47,8 +35,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          # Mesmo padrão do aquarium-light-controller: pacote por serviço + :latest
-          images: ${{ env.REGISTRY }}/dersonbsb2022/aquamanager-${{ matrix.name }}
+          images: ${{ env.IMAGE }}
           tags: |
             type=raw,value=latest,enable={{ is_default_branch }}
             type=ref,event=branch
@@ -58,15 +45,15 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.context }}
-          file: ${{ matrix.dockerfile }}
+          context: .
+          file: Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            VITE_API_URL=${{ matrix.vite_api_url }}
+            VITE_API_URL=
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Imagem publicada
-        run: echo "${{ env.REGISTRY }}/dersonbsb2022/aquamanager-${{ matrix.name }}:latest"
+        run: echo "${{ env.IMAGE }}:latest"
