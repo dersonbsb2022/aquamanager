@@ -12,8 +12,6 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  # Um pacote no GHCR (Packages → aquamanager), duas tags: api-latest e web-latest
-  IMAGE_NAME: ghcr.io/dersonbsb2022/aquamanager
 
 jobs:
   build-and-push:
@@ -25,12 +23,10 @@ jobs:
           - name: api
             context: packages/api
             dockerfile: packages/api/Dockerfile
-            tag: api-latest
             vite_api_url: ''
           - name: web
             context: packages/web
             dockerfile: packages/web/Dockerfile
-            tag: web-latest
             vite_api_url: ''
 
     steps:
@@ -51,10 +47,13 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.IMAGE_NAME }}
+          # Mesmo padrão do aquarium-light-controller: pacote por serviço + :latest
+          images: ${{ env.REGISTRY }}/dersonbsb2022/aquamanager-${{ matrix.name }}
           tags: |
-            type=raw,value=${{ matrix.tag }}
-            type=sha,prefix=${{ matrix.name }}-
+            type=raw,value=latest,enable={{ is_default_branch }}
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=sha,prefix=
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -70,4 +69,4 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Imagem publicada
-        run: echo "${{ env.IMAGE_NAME }}:${{ matrix.tag }}"
+        run: echo "${{ env.REGISTRY }}/dersonbsb2022/aquamanager-${{ matrix.name }}:latest"

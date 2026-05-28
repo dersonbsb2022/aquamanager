@@ -63,10 +63,10 @@ npm run dev:web
 | **CI** (`.github/workflows/ci.yml`) | push/PR em `main` | `npm ci`, build, testes, build das imagens Docker |
 | **Docker Publish** (`.github/workflows/docker-publish.yml`) | push em `main`, tags `v*` ou manual | Publica imagens no **GHCR** |
 
-Imagens geradas (um pacote GHCR `aquamanager`, duas tags):
+Imagens geradas (mesmo padrão do `aquarium-light-controller`):
 
-- `ghcr.io/dersonbsb2022/aquamanager:api-latest`
-- `ghcr.io/dersonbsb2022/aquamanager:web-latest`
+- `ghcr.io/dersonbsb2022/aquamanager-api:latest`
+- `ghcr.io/dersonbsb2022/aquamanager-web:latest`
 
 No repositório GitHub: **Settings → Actions → General → Workflow permissions** → permitir leitura/escrita de pacotes (para publicar no GHCR).
 
@@ -89,7 +89,7 @@ Postgres na porta **5432**; frontend em **8080**.
 3. **Registry no Portainer** (pacote GHCR costuma nascer privado):
    - *Registries* → *Add registry* → URL `ghcr.io`, usuário GitHub, senha = PAT com `read:packages`
    - Ao implantar a stack, use autenticação de registry (ou torne o pacote **Public** em GitHub → Packages → `aquamanager`)
-   - No servidor: `docker pull ghcr.io/dersonbsb2022/aquamanager:api-latest` deve funcionar antes do deploy
+   - No servidor: `docker pull ghcr.io/dersonbsb2022/aquamanager-api:latest` deve funcionar antes do deploy
 
 Via CLI (opcional):
 
