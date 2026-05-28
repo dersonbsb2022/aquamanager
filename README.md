@@ -103,6 +103,8 @@ O arquivo `.env.prod.example` é só referência — o Portainer **não** lê `.
 
 O **nginx** do frontend encaminha `/api` e `/uploads` para o serviço `api` — não precisa configurar `VITE_API_URL` nas imagens oficiais.
 
+O `docker-compose.stack.yml` usa a rede externa **`netsrv`** e labels **Traefik** (igual ao `aquarium-light-controller`). Ajuste o `Host(...)` no label do serviço `web` antes do deploy.
+
 Migrações rodam automaticamente ao subir o container da API (`prisma migrate deploy`).
 
 Se preferir API em URL separada (sem proxy no nginx), faça rebuild da web com `VITE_API_URL=https://api.seudominio.com`.
