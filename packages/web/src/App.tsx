@@ -6,7 +6,7 @@ import { DashboardPage } from './pages/DashboardPage.js';
 import { LoginPage } from './pages/LoginPage.js';
 import { NewAquariumPage } from './pages/NewAquariumPage.js';
 import { NewWaterTestPage } from './pages/NewWaterTestPage.js';
-import { RegisterPage } from './pages/RegisterPage.js';
+import { CreateUserPage } from './pages/CreateUserPage.js';
 import { SettingsPage } from './pages/SettingsPage.js';
 import { TestParametersPage } from './pages/TestParametersPage.js';
 import { Button } from './components/ui/button.js';
@@ -55,7 +55,6 @@ export function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
           <Route element={<Shell />}>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/aquariums/new" element={<NewAquariumPage />} />
@@ -63,6 +62,7 @@ export function App() {
             <Route path="/aquariums/:aquariumId/water-tests/new" element={<NewWaterTestPage />} />
             <Route path="/test-parameters" element={<TestParametersPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/settings/create-user" element={<CreateUserPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

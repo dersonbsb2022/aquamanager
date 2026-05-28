@@ -1,6 +1,6 @@
 import type { FormEvent } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 import { apiFetch } from '../services/api.js';
 import type { AccessToken } from '../types/api.js';
@@ -58,12 +58,6 @@ export function LoginPage() {
             <Button type="submit" className="w-full" disabled={m.isPending}>
               {m.isPending ? 'Entrando…' : 'Entrar'}
             </Button>
-            <p className="text-center text-sm text-muted-foreground">
-              Novo aqui?{' '}
-              <Link className="font-medium text-primary hover:underline" to="/register">
-                Criar conta
-              </Link>
-            </p>
           </form>
         </CardContent>
       </Card>

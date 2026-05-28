@@ -48,6 +48,22 @@ export function SettingsPage() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Administração</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-3">
+            Cadastre novos usuários que poderão acessar o sistema (sem página pública de registro).
+          </p>
+          <Link to="/settings/create-user">
+            <Button type="button" variant="outline">
+              Criar conta de usuário
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Perfil</CardTitle>
         </CardHeader>
         <CardContent>

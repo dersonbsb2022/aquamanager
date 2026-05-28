@@ -27,6 +27,8 @@ import {
   updateAnimalBodySchema,
 } from './modules/animal/animal.schema.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
+import { registerBodySchema } from './modules/auth/auth.schema.js';
+import { registerUser } from './modules/auth/auth.service.js';
 import {
   createTestParameterBodySchema,
   updateTestParameterBodySchema,
@@ -121,6 +123,12 @@ async function authedRoutesPlugin(instance: FastifyInstance): Promise<void> {
       const userId = req.userId!;
       const profile = await updateProfile(instance.prisma, userId, body);
       return sendOk(reply, profile);
+    });
+
+    instance.post('/users', async (req, reply) => {
+      const body = registerBodySchema.parse(req.body);
+      const result = await registerUser(instance.prisma, body);
+      return sendOk(reply, result.user, 201);
     });
 
     instance.get('/test-parameters', async (req, reply) => {
