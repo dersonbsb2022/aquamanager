@@ -54,7 +54,7 @@ services:
       - traefik.http.routers.aquamanager.tls=true
       - traefik.http.routers.aquamanager.tls.certresolver=letsencryptresolver
       - traefik.http.routers.aquamanager.service=aquamanager
-      - traefik.http.services.aquamanager.loadbalancer.server.port=80
+      - traefik.http.services.aquamanager.loadbalancer.server.port=8080
 
 networks:
   netsrv:

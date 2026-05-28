@@ -2,6 +2,7 @@
 # Uma imagem só: ghcr.io/dersonbsb2022/aquamanager:latest (API + web + nginx)
 #
 # Edite ALTERE_* e o Host do Traefik antes de implantar.
+# Web na porta 8080 dentro do container (Traefik → 8080). Não publica porta no host.
 
 version: "3.8"
 
@@ -52,7 +53,7 @@ services:
       - traefik.http.routers.aquamanager.tls=true
       - traefik.http.routers.aquamanager.tls.certresolver=letsencryptresolver
       - traefik.http.routers.aquamanager.service=aquamanager
-      - traefik.http.services.aquamanager.loadbalancer.server.port=80
+      - traefik.http.services.aquamanager.loadbalancer.server.port=8080
 
 networks:
   netsrv:

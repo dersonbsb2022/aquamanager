@@ -26,6 +26,7 @@ RUN apt-get update \
 WORKDIR /app/api
 ENV NODE_ENV=production
 ENV PORT=3333
+ENV WEB_PORT=8080
 ENV UPLOAD_DIR=/app/api/uploads
 
 COPY packages/api/package.json ./
@@ -41,9 +42,9 @@ COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 COPY docker/start.sh /start.sh
 RUN chmod +x /start.sh
 
-EXPOSE 80
+EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=60s \
-  CMD curl -fsS http://127.0.0.1/api/health || exit 1
+  CMD curl -fsS http://127.0.0.1:8080/api/health || exit 1
 
 CMD ["/start.sh"]
