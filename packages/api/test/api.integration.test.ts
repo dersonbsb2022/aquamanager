@@ -1,19 +1,23 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createApp } from '../src/app.js';
-import { prisma } from '../src/config/database.js';
 
 /**
  * Integração opcional — exige Postgres acessível e migrações aplicadas:
  * RUN_INTEGRATION=1 DATABASE_URL=postgresql://... JWT_SECRET=(32+) JWT_REFRESH_SECRET=(32+) npm run test:integration -w @aquamanager/api
+ *
+ * Imports dinâmicos: não carregar app/prisma quando o teste está em skip (ex.: CI sem env).
  */
 const run = process.env.RUN_INTEGRATION === '1' && Boolean(process.env.DATABASE_URL);
 const describeIntegration = run ? describe : describe.skip;
 
 describeIntegration('API HTTP (integração)', () => {
-  let app: Awaited<ReturnType<typeof createApp>>;
+  let app: Awaited<ReturnType<(typeof import('../src/app.js'))['createApp']>>;
+  let prisma: import('@prisma/client').PrismaClient;
 
   beforeAll(async () => {
-    app = await createApp();
+    const appMod = await import('../src/app.js');
+    const dbMod = await import('../src/config/database.js');
+    prisma = dbMod.prisma;
+    app = await appMod.createApp();
   });
 
   afterAll(async () => {

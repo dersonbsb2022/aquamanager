@@ -33,8 +33,10 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Unit tests (API)
+      - name: Unit tests (API, sem integração)
         run: npm test
+        env:
+          NODE_ENV: test
 
   docker-build:
     runs-on: ubuntu-latest

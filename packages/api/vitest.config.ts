@@ -7,5 +7,7 @@ export default defineConfig({
     fileParallelism: false,
     hookTimeout: 120_000,
     testTimeout: 120_000,
+    /** Integração exige Postgres + env; rode com npm run test:integration */
+    exclude: ['**/node_modules/**', '**/dist/**', '**/api.integration.test.ts'],
   },
 });
