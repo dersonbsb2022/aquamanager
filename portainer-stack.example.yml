@@ -1,7 +1,9 @@
-# Stack Docker Swarm / Portainer + Traefik (rede netsrv)
-# Uma imagem só: ghcr.io/dersonbsb2022/aquamanager:latest (API + web + nginx)
+# Cole no Portainer — mesmo formato do aquarium-light-controller + Postgres
+# Imagem: ghcr.io/dersonbsb2022/aquamanager:latest (nome = repositório GitHub)
 #
-# Edite ALTERE_* e o Host do Traefik antes de implantar.
+# 1) Substitua ALTERE_* (senha igual no postgres e na DATABASE_URL)
+# 2) Ajuste o Host do Traefik se precisar
+# 3) Registry ghcr.io já configurado no Portainer (igual ao light)
 
 version: "3.8"
 
@@ -27,6 +29,8 @@ services:
 
   aquamanager:
     image: ghcr.io/dersonbsb2022/aquamanager:latest
+    volumes:
+      - app_uploads:/app/api/uploads
     environment:
       - DATABASE_URL=postgresql://aquamanager:ALTERE_SENHA_DO_BANCO@postgres:5432/aquamanager
       - JWT_SECRET=ALTERE_JWT_SECRET_MINIMO_32_CARACTERES
@@ -36,8 +40,6 @@ services:
       - UPLOAD_DIR=/app/api/uploads
       - MAX_UPLOAD_MB=5
       - TZ=America/Sao_Paulo
-    volumes:
-      - app_uploads:/app/api/uploads
     networks:
       - netsrv
     deploy:

@@ -18,7 +18,7 @@ RUN npm run build
 
 FROM node:22-bookworm-slim AS runner
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends nginx \
+  && apt-get install -y --no-install-recommends nginx curl \
   && rm -rf /var/lib/apt/lists/* \
   && mkdir -p /app/api/uploads /usr/share/nginx/html \
   && rm -f /etc/nginx/sites-enabled/default
@@ -42,4 +42,8 @@ COPY docker/start.sh /start.sh
 RUN chmod +x /start.sh
 
 EXPOSE 80
+
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=60s \
+  CMD curl -fsS http://127.0.0.1/api/health || exit 1
+
 CMD ["/start.sh"]

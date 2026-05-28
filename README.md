@@ -56,6 +56,8 @@ npm run dev:web
 # http://localhost:5173
 ```
 
+Deploy passo a passo (comparado ao `aquarium-light-controller`): ver **[DEPLOY.md](./DEPLOY.md)**.
+
 ## CI/CD (GitHub Actions)
 
 | Workflow | Quando roda | O que faz |
