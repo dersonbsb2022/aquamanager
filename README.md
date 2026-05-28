@@ -60,8 +60,7 @@ npm run dev:web
 
 | Workflow | Quando roda | O que faz |
 |----------|-------------|-----------|
-| **CI** (`.github/workflows/ci.yml`) | push/PR em `main` | `npm ci`, build, testes, build das imagens Docker |
-| **Docker Publish** (`.github/workflows/docker-publish.yml`) | push em `main`, tags `v*` ou manual | Publica imagens no **GHCR** |
+| **CI** (`.github/workflows/ci.yml`) | push/PR em `main`, tags `v*`, manual | Testes + build Docker; em push em `main` publica no **GHCR** |
 
 Imagem gerada (mesmo padrão do `aquarium-light-controller` — **uma** imagem, tag `latest`):
 
