@@ -56,20 +56,49 @@ npm run dev:web
 # http://localhost:5173
 ```
 
-## Docker Compose
+## CI/CD (GitHub Actions)
 
-- **Swarm**: `docker stack deploy -c docker-compose.yml aquamanager`  
-  Antes configure segredos/variáveis no ambiente ou use `docker secret` onde aplicável.
+| Workflow | Quando roda | O que faz |
+|----------|-------------|-----------|
+| **CI** (`.github/workflows/ci.yml`) | push/PR em `main` | `npm ci`, build, testes, build das imagens Docker |
+| **Docker Publish** (`.github/workflows/docker-publish.yml`) | push em `main`, tags `v*` ou manual | Publica imagens no **GHCR** |
 
-- **Local (Compose clássico)**:
+Imagens geradas (exemplo):
+
+- `ghcr.io/dersonbsb2022/aquamanager-api:latest`
+- `ghcr.io/dersonbsb2022/aquamanager-web:latest`
+
+No repositório GitHub: **Settings → Actions → General → Workflow permissions** → permitir leitura/escrita de pacotes (para publicar no GHCR).
+
+Pacotes privados: no servidor Swarm, `docker login ghcr.io` com um PAT (`read:packages`).
+
+## Docker / Swarm
+
+### Local (Compose clássico)
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
 
-- Postgres fica na porta **5432** no override dev; frontend em **8080** → nginx servindo SPA.
+Postgres na porta **5432**; frontend em **8080**.
 
-Ao **build da imagem web**, passe `VITE_API_URL` acessível no **browser** (ex.: `http://seu-host:3333`).
+### Produção (Swarm + imagens do GHCR)
+
+No servidor:
+
+```bash
+cp .env.prod.example .env
+# edite JWT_*, DB_* etc.
+
+docker login ghcr.io
+docker stack deploy -c docker-compose.stack.yml aquamanager
+```
+
+O **nginx** do frontend encaminha `/api` e `/uploads` para o serviço `api` — não precisa configurar `VITE_API_URL` nas imagens oficiais.
+
+Migrações rodam automaticamente ao subir o container da API (`prisma migrate deploy`).
+
+Se preferir API em URL separada (sem proxy no nginx), faça rebuild da web com `VITE_API_URL=https://api.seudominio.com`.
 
 ## Testes
 

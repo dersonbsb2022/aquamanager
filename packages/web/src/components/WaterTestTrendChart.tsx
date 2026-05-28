@@ -12,6 +12,16 @@ import {
 
 type Point = { testedAt: string; value: number; isWithinRange: boolean | null };
 
+function formatAxisNumber(v: number): string {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return '';
+  const abs = Math.abs(n);
+  // Ajuste simples para evitar "lixo" de casas decimais:
+  // 1024 → 1024 | 7.8 → 7,8 | 0.58 → 0,58
+  const maxFractionDigits = abs >= 100 ? 0 : abs >= 10 ? 1 : abs >= 1 ? 1 : abs >= 0.1 ? 2 : 3;
+  return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: maxFractionDigits }).format(n);
+}
+
 export function WaterTestTrendChart({
   points,
   idealMin,
@@ -77,10 +87,10 @@ export function WaterTestTrendChart({
               domain={domain}
               tick={{ fontSize: 10, fill: 'hsl(215 16% 57%)' }}
               stroke="hsl(215 22% 22%)"
-              tickFormatter={(v) => (Number.isFinite(v) ? Number(v).toPrecision(4) : '')}
+              tickFormatter={(v) => formatAxisNumber(Number(v))}
             />
             <Tooltip
-              formatter={(value: number) => [value, parameterName]}
+              formatter={(value: number) => [formatAxisNumber(value), parameterName]}
               labelFormatter={(_, payload) => {
                 const p = payload?.[0]?.payload as { testedAt?: string } | undefined;
                 return p?.testedAt ? new Date(p.testedAt).toLocaleString('pt-BR') : '';

@@ -39,6 +39,7 @@ import {
 } from './modules/test-parameter/test-parameter.service.js';
 import {
   createWaterTestBodySchema,
+  listWaterTestsQuerySchema,
   waterTestHistoryQuerySchema,
 } from './modules/water-test/water-test.schema.js';
 import {
@@ -302,7 +303,7 @@ async function authedRoutesPlugin(instance: FastifyInstance): Promise<void> {
 
     instance.get('/aquariums/:aquariumId/water-tests', async (req, reply) => {
       const { aquariumId } = aquariumParamSchema.parse(req.params);
-      const query = paginationQuerySchema.parse(req.query);
+      const query = listWaterTestsQuerySchema.parse(req.query);
       const userId = req.userId!;
       const result = await listWaterTests(instance.prisma, userId, aquariumId, query);
       return sendOk(reply, result);

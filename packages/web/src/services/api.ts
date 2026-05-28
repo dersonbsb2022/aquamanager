@@ -1,12 +1,11 @@
 import type { ApiErrorBody, ApiSuccess, AccessToken } from '../types/api.js';
 import { clearSession, getStoredRefreshToken, getStoredToken, setSession } from '../stores/token.js';
 
-/** Base da API: em dev usa proxy `/api` (sem CORS); em prod usa VITE_API_URL */
+/** Base da API: `/api` com proxy (Vite dev ou nginx em prod). Ou URL absoluta via VITE_API_URL. */
 function baseUrl(): string {
-  if (import.meta.env.DEV) return '/api';
   const v = import.meta.env.VITE_API_URL;
   if (typeof v === 'string' && v.length > 0) return v.replace(/\/$/, '');
-  return '';
+  return '/api';
 }
 
 export class ApiRequestError extends Error {

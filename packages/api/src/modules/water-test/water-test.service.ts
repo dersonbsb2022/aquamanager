@@ -1,23 +1,34 @@
 import type { PrismaClient } from '@prisma/client';
 import { notFound } from '../../shared/errors/app-error.js';
-import { buildMeta, offsetFromPage, paginationQuerySchema } from '../../shared/utils/pagination.js';
+import { buildMeta, offsetFromPage } from '../../shared/utils/pagination.js';
 import { findOwnedAquarium } from '../../shared/middlewares/ownership.js';
 import { evaluateParameterStatus } from '../../shared/utils/range.js';
 import type { z } from 'zod';
-import type { createWaterTestBodySchema, waterTestHistoryQuerySchema } from './water-test.schema.js';
+import type {
+  createWaterTestBodySchema,
+  listWaterTestsQuerySchema,
+  waterTestHistoryQuerySchema,
+} from './water-test.schema.js';
 
 type CreateBody = z.infer<typeof createWaterTestBodySchema>;
 type HistoryQuery = z.infer<typeof waterTestHistoryQuerySchema>;
+type ListQuery = z.infer<typeof listWaterTestsQuerySchema>;
 
 export async function listWaterTests(
   prisma: PrismaClient,
   userId: string,
   aquariumId: string,
-  query: z.infer<typeof paginationQuerySchema>,
+  query: ListQuery,
 ) {
   await findOwnedAquarium(prisma, userId, aquariumId, { activeOnly: false });
   const { page, perPage } = query;
-  const where = { aquariumId };
+  const where = {
+    aquariumId,
+    testedAt: {
+      gte: query.from ?? undefined,
+      lte: query.to ?? undefined,
+    },
+  };
   const total = await prisma.waterTest.count({ where });
   const items = await prisma.waterTest.findMany({
     where,

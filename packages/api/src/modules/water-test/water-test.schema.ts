@@ -16,3 +16,10 @@ export const waterTestHistoryQuerySchema = z.object({
   from: z.coerce.date().optional(),
   to: z.coerce.date().optional(),
 });
+
+export const listWaterTestsQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  perPage: z.coerce.number().int().min(1).max(100).default(20),
+  from: z.coerce.date().optional(),
+  to: z.coerce.date().optional(),
+});

@@ -17,7 +17,7 @@ services:
         condition: on-failure
 
   api:
-    image: aquamanager/api:latest
+    image: ${API_IMAGE:-ghcr.io/dersonbsb2022/aquamanager-api:latest}
     build:
       context: ./packages/api
       dockerfile: Dockerfile
@@ -27,12 +27,12 @@ services:
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-super-refresh-change-me}
       PORT: 3333
       NODE_ENV: production
-    ports:
-      - "3333:3333"
+      UPLOAD_DIR: /app/uploads
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-5}
+    volumes:
+      - api_uploads:/app/uploads
     networks:
       - backend
-    depends_on:
-      - postgres
     deploy:
       replicas: 2
       restart_policy:
@@ -40,22 +40,38 @@ services:
       update_config:
         parallelism: 1
         delay: 10s
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "require(''http'').get(''http://127.0.0.1:3333/health'',r=>process.exit(r.statusCode===200?0:1)).on(''error'',()=>process.exit(1))"',
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
 
   web:
-    image: aquamanager/web:latest
+    image: ${WEB_IMAGE:-ghcr.io/dersonbsb2022/aquamanager-web:latest}
     build:
       context: ./packages/web
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:3333}
+        VITE_API_URL: ${VITE_API_URL:-}
     ports:
-      - "80:80"
+      - "${WEB_PORT:-80}:80"
     networks:
+      - backend
       - frontend
     deploy:
       replicas: 2
       restart_policy:
         condition: on-failure
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1/ >/dev/null 2>&1 || exit 1']
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
 networks:
   backend:
@@ -65,3 +81,4 @@ networks:
 
 volumes:
   pgdata:
+  api_uploads:

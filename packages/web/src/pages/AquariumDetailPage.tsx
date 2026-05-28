@@ -18,9 +18,12 @@ import type {
 } from '../types/api.js';
 import { WaterTestSnapshotChart } from '../components/WaterTestSnapshotChart.js';
 import { WaterTestTrendChart } from '../components/WaterTestTrendChart.js';
+import type { Period } from '../components/WaterTestsOverviewLineChart.js';
 import { WaterTestDeleteButton } from '../components/WaterTestDeleteButton.js';
 import { AnimalEditDialog } from '../components/AnimalEditDialog.js';
 import { AnimalViewDialog } from '../components/AnimalViewDialog.js';
+import { EquipmentFormDialog } from '../components/EquipmentFormDialog.js';
+import { equipmentTypeLabel } from '../lib/equipmentTypes.js';
 import { Archive, DeleteIconButton, RowActions, RowIconButton } from '../components/row-actions.js';
 import { AquariumInfoPanel } from '../components/AquariumInfoPanel.js';
 import { AquariumPhoto } from '../components/AquariumPhoto.js';
@@ -57,7 +60,9 @@ export function AquariumDetailPage() {
   const qc = useQueryClient();
   const id = aquariumId!;
   const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
-  const [paramFilter, setParamFilter] = useState('');
+  const [paramFilter, setParamFilter] = useState(''); // filtro do snapshot (abaixo)
+  const [trendParam, setTrendParam] = useState(''); // parâmetro do gráfico de tendência (acima)
+  const [testsPeriod, setTestsPeriod] = useState<Period>('this_month');
 
   const detailQ = useQuery({
     queryKey: ['aquarium', id],
@@ -71,10 +76,28 @@ export function AquariumDetailPage() {
     enabled: Boolean(token && aquariumId),
   });
 
+  const testsRange = useMemo(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    if (testsPeriod === 'this_year') {
+      return { from: new Date(y, 0, 1, 0, 0, 0, 0), to: new Date(y, 11, 31, 23, 59, 59, 999) };
+    }
+    if (testsPeriod === 'last_month') {
+      return { from: new Date(y, m - 1, 1, 0, 0, 0, 0), to: new Date(y, m, 0, 23, 59, 59, 999) };
+    }
+    return { from: new Date(y, m, 1, 0, 0, 0, 0), to: new Date(y, m + 1, 0, 23, 59, 59, 999) };
+  }, [testsPeriod]);
+
   const testsQ = useQuery({
-    queryKey: ['aquarium', id, 'water-tests'],
+    queryKey: ['aquarium', id, 'water-tests', testsPeriod],
     queryFn: () =>
-      apiFetch<Paginated<WaterTest>>(`/aquariums/${id}/water-tests?page=1&perPage=50`, { token }),
+      apiFetch<Paginated<WaterTest>>(
+        `/aquariums/${id}/water-tests?page=1&perPage=50&from=${encodeURIComponent(testsRange.from.toISOString())}&to=${encodeURIComponent(
+          testsRange.to.toISOString(),
+        )}`,
+        { token },
+      ),
     enabled: Boolean(token && aquariumId),
   });
 
@@ -111,21 +134,32 @@ export function AquariumDetailPage() {
   }, [tests]);
 
   useEffect(() => {
+    if (!trendParam && paramFilterOptions.length > 0) {
+      setTrendParam(paramFilterOptions[0]);
+    }
+  }, [trendParam, paramFilterOptions]);
+
+  useEffect(() => {
     if (paramFilter && selectedTest && !selectedTest.results.some((r) => r.testParameter.name === paramFilter)) {
       setParamFilter('');
     }
   }, [selectedTestId, selectedTest, paramFilter]);
 
   const histQ = useQuery({
-    queryKey: ['aquarium', id, 'history', paramFilter],
+    queryKey: ['aquarium', id, 'history', trendParam, testsPeriod],
     queryFn: () =>
       apiFetch<{
         points: { testedAt: string; value: number; isWithinRange: boolean | null }[];
         idealRange: { idealMin: number | null; idealMax: number | null } | null;
-      }>(`/aquariums/${id}/water-tests/history?parameter=${encodeURIComponent(paramFilter)}`, {
+      }>(
+        `/aquariums/${id}/water-tests/history?parameter=${encodeURIComponent(trendParam)}&from=${encodeURIComponent(
+          testsRange.from.toISOString(),
+        )}&to=${encodeURIComponent(testsRange.to.toISOString())}`,
+        {
         token,
-      }),
-    enabled: Boolean(token && aquariumId && paramFilter),
+        },
+      ),
+    enabled: Boolean(token && aquariumId && trendParam),
   });
 
   const changesQ = useQuery({
@@ -306,7 +340,59 @@ export function AquariumDetailPage() {
             <CardContent className="space-y-6">
               <div className="flex flex-wrap items-end gap-3">
                 <div className="space-y-1">
-                  <Label htmlFor="paramFilter">Parâmetro</Label>
+                  <Label htmlFor="trendParam">Parâmetro (gráfico)</Label>
+                  <select
+                    id="trendParam"
+                    className="h-9 min-w-[240px] rounded-md border border-input bg-background px-2 text-sm text-foreground"
+                    value={trendParam}
+                    onChange={(e) => setTrendParam(e.target.value)}
+                  >
+                    {paramFilterOptions.map((name) => {
+                      const tp = (tpQ.data?.items ?? []).find((p) => p.name === name);
+                      return (
+                        <option key={name} value={name}>
+                          {name}
+                          {tp?.unit ? ` (${tp.unit})` : ''}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <Label>Período</Label>
+                  <div className="flex gap-1 rounded-md border border-border bg-card p-1">
+                    {(['this_month', 'last_month', 'this_year'] as const).map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => setTestsPeriod(p)}
+                        className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                          testsPeriod === p ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                        }`}
+                      >
+                        {p === 'this_month' ? 'Mês atual' : p === 'last_month' ? 'Mês anterior' : 'Ano'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {trendParam && histQ.data ? (
+                <WaterTestTrendChart
+                  points={histQ.data.points}
+                  idealMin={histQ.data.idealRange?.idealMin ?? null}
+                  idealMax={histQ.data.idealRange?.idealMax ?? null}
+                  parameterName={trendParam}
+                  highlightTestedAt={selectedTest?.testedAt ?? null}
+                />
+              ) : (
+                <p className="text-sm text-muted-foreground">Selecione um parâmetro para ver a tendência.</p>
+              )}
+
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="paramFilter">Parâmetro (filtro do teste selecionado)</Label>
                   <select
                     id="paramFilter"
                     className="h-9 min-w-[240px] rounded-md border border-input bg-background px-2 text-sm text-foreground"
@@ -333,16 +419,6 @@ export function AquariumDetailPage() {
                 waterType={aq?.waterType}
                 parameterCatalog={tpQ.data?.items ?? []}
               />
-
-              {paramFilter && histQ.data ? (
-                <WaterTestTrendChart
-                  points={histQ.data.points}
-                  idealMin={histQ.data.idealRange?.idealMin ?? null}
-                  idealMax={histQ.data.idealRange?.idealMax ?? null}
-                  parameterName={paramFilter}
-                  highlightTestedAt={selectedTest?.testedAt ?? null}
-                />
-              ) : null}
 
               <div className="space-y-3 border-t border-border pt-6">
                 <div>
@@ -418,44 +494,7 @@ export function AquariumDetailPage() {
               <CardTitle>Equipamentos e manutenção</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <EquipmentQuickForm aquariumId={id} token={token} />
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Marca / modelo</TableHead>
-                    <TableHead>Próxima manutenção</TableHead>
-                    <TableHead className="w-[1%] whitespace-nowrap text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(equipQ.data?.items ?? []).map((e) => (
-                    <TableRow key={e.id}>
-                      <TableCell>{e.type}</TableCell>
-                      <TableCell>
-                        {e.brand ?? ''} {e.model ?? ''}
-                      </TableCell>
-                      <TableCell>
-                        {e.nextMaintenanceAt ? new Date(e.nextMaintenanceAt).toLocaleDateString('pt-BR') : '—'}{' '}
-                        {e.nextMaintenanceAt && new Date(e.nextMaintenanceAt).getTime() <= Date.now() ? (
-                          <Badge variant="warning" className="ml-2">
-                            vencido
-                          </Badge>
-                        ) : null}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <RowActions>
-                          <DeleteIconButton
-                            confirmMessage={`Excluir este equipamento (${e.type})?\n\nEsta ação não pode ser desfeita.`}
-                            deleteFn={() => apiFetch<void>(`/equipments/${e.id}`, { method: 'DELETE', token })}
-                            onSuccess={() => qc.invalidateQueries({ queryKey: ['aquarium', id, 'equips'] })}
-                          />
-                        </RowActions>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <EquipmentSection aquariumId={id} items={equipQ.data?.items ?? []} token={token} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -875,46 +914,89 @@ function TpaQuickForm({
   );
 }
 
-function EquipmentQuickForm({ aquariumId, token }: { aquariumId: string; token: AccessToken | null }) {
+function EquipmentSection({
+  aquariumId,
+  items,
+  token,
+}: {
+  aquariumId: string;
+  items: Equipment[];
+  token: AccessToken | null;
+}) {
   const qc = useQueryClient();
-  const m = useMutation({
-    mutationFn: (payload: Record<string, unknown>) =>
-      apiFetch<Equipment>(`/aquariums/${aquariumId}/equipments`, {
-        method: 'POST',
-        body: JSON.stringify(payload),
-        token,
-      }),
-    onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ['aquarium', aquariumId, 'equips'] });
-    },
-  });
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<Equipment | null>(null);
 
-  function onSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    m.mutate({ type: String(fd.get('type')) });
+  function openCreate() {
+    setEditing(null);
+    setDialogOpen(true);
+  }
+
+  function openEdit(e: Equipment) {
+    setEditing(e);
+    setDialogOpen(true);
   }
 
   return (
-    <form className="mb-6 flex flex-wrap items-end gap-4 rounded-lg border border-border bg-muted/40 p-4" onSubmit={onSubmit}>
-      <div className="space-y-2">
-        <Label>Tipo</Label>
-        <select name="type" className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground" required defaultValue="FILTER">
-          <option value="FILTER">FILTRO</option>
-          <option value="HEATER">AQUECEDOR</option>
-          <option value="LIGHT">ILUMINAÇÃO</option>
-          <option value="CO2">CO2</option>
-          <option value="PUMP">BOMBA</option>
-          <option value="SKIMMER">SKIMMER</option>
-          <option value="UV_STERILIZER">UV</option>
-          <option value="OTHER">OUTRO</option>
-        </select>
+    <>
+      <div className="mb-6">
+        <Button type="button" size="sm" onClick={openCreate}>
+          Adicionar equipamento
+        </Button>
       </div>
-      {m.isError ? <p className="text-sm text-red-600">{(m.error as Error).message}</p> : null}
-      <Button type="submit" size="sm" disabled={m.isPending}>
-        Adicionar equipamento
-      </Button>
-    </form>
+
+      {items.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Nenhum equipamento cadastrado ainda.</p>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Tipo</TableHead>
+              <TableHead>Marca / modelo</TableHead>
+              <TableHead>Próxima manutenção</TableHead>
+              <TableHead className="w-[1%] whitespace-nowrap text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {items.map((e) => (
+              <TableRow key={e.id}>
+                <TableCell>{equipmentTypeLabel(e.type)}</TableCell>
+                <TableCell>
+                  {[e.brand, e.model].filter(Boolean).join(' · ') || '—'}
+                </TableCell>
+                <TableCell>
+                  {e.nextMaintenanceAt ? new Date(e.nextMaintenanceAt).toLocaleString('pt-BR') : '—'}{' '}
+                  {e.nextMaintenanceAt && new Date(e.nextMaintenanceAt).getTime() <= Date.now() ? (
+                    <Badge variant="warning" className="ml-2">
+                      vencido
+                    </Badge>
+                  ) : null}
+                </TableCell>
+                <TableCell className="text-right">
+                  <RowActions>
+                    <RowIconButton title="Editar equipamento" onClick={() => openEdit(e)} />
+                    <DeleteIconButton
+                      title="Excluir equipamento"
+                      confirmMessage={`Excluir ${equipmentTypeLabel(e.type)}${e.brand ? ` (${e.brand})` : ''}?\n\nEsta ação não pode ser desfeita.`}
+                      deleteFn={() => apiFetch<void>(`/equipments/${e.id}`, { method: 'DELETE', token })}
+                      onSuccess={() => qc.invalidateQueries({ queryKey: ['aquarium', aquariumId, 'equips'] })}
+                    />
+                  </RowActions>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+
+      <EquipmentFormDialog
+        open={dialogOpen}
+        equipment={editing}
+        aquariumId={aquariumId}
+        token={token}
+        onClose={() => setDialogOpen(false)}
+      />
+    </>
   );
 }
 
