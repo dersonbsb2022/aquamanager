@@ -82,17 +82,21 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 
 Postgres na porta **5432**; frontend em **8080**.
 
-### Produção (Swarm + imagens do GHCR)
+### Produção (Swarm / Portainer + imagens do GHCR)
 
-No servidor:
+1. Edite `docker-compose.stack.yml` e substitua todos os valores `ALTERE_*` (senha do banco, JWT, etc.). A `DATABASE_URL` da API deve usar a **mesma** senha do `POSTGRES_PASSWORD`.
+2. No **Portainer**: *Stacks* → *Add stack* → cole o conteúdo do `docker-compose.stack.yml` → *Deploy*.
+3. Se os pacotes no GHCR forem privados, configure o registry `ghcr.io` no Portainer (usuário GitHub + PAT com `read:packages`).
+
+Via CLI (opcional):
 
 ```bash
-cp .env.prod.example .env
-# edite JWT_*, DB_* etc.
-
+# edite docker-compose.stack.yml antes
 docker login ghcr.io
 docker stack deploy -c docker-compose.stack.yml aquamanager
 ```
+
+O arquivo `.env.prod.example` é só referência — o Portainer **não** lê `.env` na stack.
 
 O **nginx** do frontend encaminha `/api` e `/uploads` para o serviço `api` — não precisa configurar `VITE_API_URL` nas imagens oficiais.
 

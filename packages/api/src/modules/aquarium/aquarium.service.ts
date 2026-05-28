@@ -1,6 +1,11 @@
 import type { PrismaClient } from '@prisma/client';
 import { notFound } from '../../shared/errors/app-error.js';
 import { buildMeta, offsetFromPage, type PaginatedMeta } from '../../shared/utils/pagination.js';
+import {
+  buildWaterStatusSnapshot,
+  fetchLatestParameterSnapshots,
+  type WaterSummary,
+} from '../../shared/utils/water-parameter-snapshot.js';
 import type { createAquariumBodySchema, listAquariumsQuerySchema, updateAquariumBodySchema } from './aquarium.schema.js';
 import type { z } from 'zod';
 
@@ -19,11 +24,15 @@ export type AquariumListItem = {
   lastWaterTest: {
     id: string;
     testedAt: Date;
-    summary: 'ok' | 'warning' | 'unknown';
+    /** Situação atual: último valor de cada parâmetro já medido */
+    summary: WaterSummary;
+    outOfRangeCount: number;
+    trackedParameterCount: number;
+    outOfRangeParameters: string[];
   } | null;
+  /** Sem testes registrados */
+  waterStatus: WaterSummary;
 };
-
-type TestSummary = 'ok' | 'warning' | 'unknown';
 
 export async function listAquariums(
   prisma: PrismaClient,
@@ -46,9 +55,7 @@ export async function listAquariums(
       waterTests: {
         orderBy: { testedAt: 'desc' },
         take: 1,
-        include: {
-          results: { select: { isWithinRange: true } },
-        },
+        select: { id: true, testedAt: true },
       },
     },
   });
@@ -63,9 +70,11 @@ export async function listAquariums(
           _sum: { quantity: true },
         });
   const qtyByAquarium = new Map(aggregates.map((g) => [g.aquariumId, g._sum.quantity ?? 0]));
+  const snapshotsByAquarium = await fetchLatestParameterSnapshots(prisma, ids);
 
   const mapped: AquariumListItem[] = items.map((a) => {
     const last = a.waterTests[0] ?? null;
+    const snapshot = buildWaterStatusSnapshot(snapshotsByAquarium.get(a.id) ?? []);
     return {
       id: a.id,
       name: a.name,
@@ -74,24 +83,21 @@ export async function listAquariums(
       waterType: a.waterType,
       isActive: a.isActive,
       aliveQuantity: qtyByAquarium.get(a.id) ?? 0,
+      waterStatus: snapshot.summary,
       lastWaterTest: last
         ? {
             id: last.id,
             testedAt: last.testedAt,
-            summary: judgeTestSummary(last.results.map((r) => r.isWithinRange)),
+            summary: snapshot.summary,
+            outOfRangeCount: snapshot.outOfRangeCount,
+            trackedParameterCount: snapshot.trackedParameterCount,
+            outOfRangeParameters: snapshot.outOfRangeParameters,
           }
         : null,
     };
   });
 
   return { items: mapped, meta: buildMeta(page, perPage, total) };
-}
-
-function judgeTestSummary(flags: (boolean | null)[]): TestSummary {
-  const defined = flags.filter((f): f is boolean => f !== null);
-  if (defined.length === 0) return 'unknown';
-  if (defined.some((f) => f === false)) return 'warning';
-  return 'ok';
 }
 
 export async function createAquarium(prisma: PrismaClient, userId: string, body: CreateBody) {
@@ -133,12 +139,41 @@ export async function getAquariumDetail(prisma: PrismaClient, userId: string, id
   });
 
   const lastTest = aquarium.waterTests[0] ?? null;
+  const snapshotRows = (await fetchLatestParameterSnapshots(prisma, [id])).get(id) ?? [];
+  const waterStatus = buildWaterStatusSnapshot(snapshotRows);
+  const outOfRangeRows = snapshotRows.filter((r) => r.isWithinRange === false);
+  const outOfRangeNames = outOfRangeRows.map((r) => r.parameterName);
+  const ranges =
+    outOfRangeNames.length === 0
+      ? []
+      : await prisma.parameterRange.findMany({
+          where: {
+            waterType: aquarium.waterType,
+            testParameter: { name: { in: outOfRangeNames } },
+          },
+          include: { testParameter: { select: { name: true } } },
+        });
+  const rangeByName = new Map(ranges.map((r) => [r.testParameter.name, r]));
+
+  const parameterAlerts = outOfRangeRows.map((r) => {
+    const range = rangeByName.get(r.parameterName);
+    return {
+      parameterName: r.parameterName,
+      unit: r.unit,
+      value: r.value,
+      lastTestedAt: r.lastTestedAt,
+      idealMin: range?.idealMin ?? null,
+      idealMax: range?.idealMax ?? null,
+    };
+  });
 
   return {
     ...aquarium,
     waterTests: undefined,
     aliveQuantity: aliveAgg._sum.quantity ?? 0,
     lastWaterTest: lastTest,
+    waterStatus,
+    parameterAlerts,
   };
 }
 
@@ -182,17 +217,16 @@ export async function getAquariumSummary(prisma: PrismaClient, userId: string, a
     },
   });
 
-  const latest = recentTests[0];
-  let alerts: { parameter: string; value: number; isWithinRange: boolean | null }[] = [];
-  if (latest) {
-    alerts = latest.results
-      .filter((r) => r.isWithinRange === false)
-      .map((r) => ({
-        parameter: r.testParameter.name,
-        value: r.value,
-        isWithinRange: r.isWithinRange,
-      }));
-  }
+  const snapshotRows = (await fetchLatestParameterSnapshots(prisma, [aquariumId])).get(aquariumId) ?? [];
+  const waterStatus = buildWaterStatusSnapshot(snapshotRows);
+  const alerts = snapshotRows
+    .filter((r) => r.isWithinRange === false)
+    .map((r) => ({
+      parameter: r.parameterName,
+      value: r.value,
+      isWithinRange: r.isWithinRange,
+      lastTestedAt: r.lastTestedAt,
+    }));
 
   const recentChanges = await prisma.waterChange.findMany({
     where: { aquariumId },
@@ -218,6 +252,7 @@ export async function getAquariumSummary(prisma: PrismaClient, userId: string, a
       isActive: aquarium.isActive,
     },
     recentWaterTests: recentTests,
+    waterStatus,
     alertsOutOfRange: alerts,
     recentWaterChanges: recentChanges,
     equipmentMaintenanceDue: equipmentDue,

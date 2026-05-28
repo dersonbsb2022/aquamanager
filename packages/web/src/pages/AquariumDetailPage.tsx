@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Eye } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Eye } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth.js';
@@ -36,14 +36,33 @@ import { Label } from '../components/ui/label.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table.js';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs.js';
 import { defaultDatetimeLocal, parseDatetimeLocal } from '../lib/datetimeLocal.js';
+import { idealRangeLabel } from '../lib/parameterRange.js';
 import { litersFromTpaPercent, tpaPercentOfAquarium } from '../lib/tpaVolume.js';
 
-type AquariumDetailApi = Omit<AquariumListItem, 'lastWaterTest'> & {
+type WaterStatusSnapshot = {
+  summary: 'ok' | 'warning' | 'unknown';
+  trackedParameterCount: number;
+  outOfRangeCount: number;
+  outOfRangeParameters: string[];
+};
+
+type ParameterAlert = {
+  parameterName: string;
+  unit: string;
+  value: number;
+  lastTestedAt: string;
+  idealMin: number | null;
+  idealMax: number | null;
+};
+
+type AquariumDetailApi = Omit<AquariumListItem, 'lastWaterTest' | 'waterStatus'> & {
   photoUrl: string | null;
   targetTempMin: number | null;
   targetTempMax: number | null;
   aliveQuantity?: number;
   lastWaterTest: WaterTest | null;
+  waterStatus: WaterStatusSnapshot;
+  parameterAlerts: ParameterAlert[];
 };
 
 function waterLabel(w: WaterType | string) {
@@ -244,42 +263,113 @@ export function AquariumDetailPage() {
             {aq ? <AquariumInfoPanel aquarium={aq} token={token} /> : null}
 
             <Card>
-              <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
-                <CardTitle>Último teste</CardTitle>
-                {detailQ.data?.lastWaterTest ? (
-                  <WaterTestDeleteButton test={detailQ.data.lastWaterTest} aquariumId={id} token={token} />
-                ) : null}
+              <CardHeader>
+                <CardTitle>Situação da água</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                {detailQ.data?.lastWaterTest ? (
-                  <>
-                    <p className="text-muted-foreground">
-                      {new Date(detailQ.data.lastWaterTest.testedAt).toLocaleString('pt-BR')}
-                    </p>
-                    <ul className="space-y-2">
-                      {summary.map((r) => (
-                        <li key={r.id} className="flex items-center justify-between gap-4">
-                          <span>
-                            {r.testParameter.name} ({r.testParameter.unit})
-                          </span>
-                          <Badge
-                            variant={
-                              r.isWithinRange === false
-                                ? 'warning'
-                                : r.isWithinRange === true
-                                  ? 'success'
-                                  : 'default'
-                            }
-                          >
-                            {r.value}
-                          </Badge>
+              <CardContent className="space-y-6 text-sm">
+                <section className="space-y-3">
+                  <div className="flex items-center gap-2 font-medium">
+                    {(detailQ.data?.parameterAlerts.length ?? 0) > 0 ? (
+                      <AlertTriangle className="h-4 w-4 text-amber-500" aria-hidden />
+                    ) : (
+                      <CheckCircle2 className="h-4 w-4 text-emerald-500" aria-hidden />
+                    )}
+                    <span>Atenção</span>
+                    {detailQ.data?.waterStatus ? (
+                      <Badge
+                        variant={
+                          detailQ.data.waterStatus.summary === 'ok'
+                            ? 'success'
+                            : detailQ.data.waterStatus.summary === 'warning'
+                              ? 'warning'
+                              : 'default'
+                        }
+                      >
+                        {detailQ.data.waterStatus.summary === 'ok'
+                          ? 'Parâmetros OK'
+                          : detailQ.data.waterStatus.summary === 'warning'
+                            ? `${detailQ.data.waterStatus.outOfRangeCount} fora da faixa`
+                            : 'Sem referência'}
+                      </Badge>
+                    ) : null}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Com base no último valor registrado de cada parâmetro medido
+                  </p>
+                  {(detailQ.data?.parameterAlerts.length ?? 0) > 0 ? (
+                    <ul className="space-y-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+                      {detailQ.data!.parameterAlerts.map((alert) => (
+                        <li key={alert.parameterName} className="space-y-1">
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="font-medium">
+                              {alert.parameterName}
+                              {alert.unit ? ` (${alert.unit})` : ''}
+                            </span>
+                            <Badge variant="warning">{alert.value}</Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {idealRangeLabel(alert.parameterName, alert.idealMin, alert.idealMax, alert.unit)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Última medição:{' '}
+                            {new Date(alert.lastTestedAt).toLocaleString('pt-BR')}
+                          </p>
                         </li>
                       ))}
                     </ul>
-                  </>
-                ) : (
-                  <p>Nenhum teste registrado ainda.</p>
-                )}
+                  ) : detailQ.data?.waterStatus.trackedParameterCount ? (
+                    <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-muted-foreground">
+                      Nenhum parâmetro fora da faixa no momento. Continue monitorando com testes
+                      periódicos.
+                    </p>
+                  ) : (
+                    <p className="text-muted-foreground">
+                      Registre testes de água para acompanhar o que precisa de ajuste.
+                    </p>
+                  )}
+                </section>
+
+                <section className="space-y-3 border-t border-border pt-6">
+                  <div className="flex flex-row items-start justify-between gap-3">
+                    <h3 className="font-medium">Último teste</h3>
+                    {detailQ.data?.lastWaterTest ? (
+                      <WaterTestDeleteButton
+                        test={detailQ.data.lastWaterTest}
+                        aquariumId={id}
+                        token={token}
+                      />
+                    ) : null}
+                  </div>
+                  {detailQ.data?.lastWaterTest ? (
+                    <>
+                      <p className="text-muted-foreground">
+                        {new Date(detailQ.data.lastWaterTest.testedAt).toLocaleString('pt-BR')}
+                      </p>
+                      <ul className="space-y-2">
+                        {summary.map((r) => (
+                          <li key={r.id} className="flex items-center justify-between gap-4">
+                            <span>
+                              {r.testParameter.name} ({r.testParameter.unit})
+                            </span>
+                            <Badge
+                              variant={
+                                r.isWithinRange === false
+                                  ? 'warning'
+                                  : r.isWithinRange === true
+                                    ? 'success'
+                                    : 'default'
+                              }
+                            >
+                              {r.value}
+                            </Badge>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  ) : (
+                    <p className="text-muted-foreground">Nenhum teste registrado ainda.</p>
+                  )}
+                </section>
               </CardContent>
             </Card>
           </div>

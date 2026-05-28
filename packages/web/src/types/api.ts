@@ -20,10 +20,15 @@ export type AquariumListItem = {
   waterType: WaterType;
   isActive: boolean;
   aliveQuantity: number;
+  /** Situação geral sem testes */
+  waterStatus: 'ok' | 'warning' | 'unknown';
   lastWaterTest: {
     id: string;
     testedAt: string;
     summary: 'ok' | 'warning' | 'unknown';
+    outOfRangeCount: number;
+    trackedParameterCount: number;
+    outOfRangeParameters: string[];
   } | null;
 };
 

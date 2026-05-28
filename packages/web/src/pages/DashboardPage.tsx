@@ -16,9 +16,18 @@ function waterLabel(w: string) {
   return w;
 }
 
-function summaryBadge(s: 'ok' | 'warning' | 'unknown') {
+function summaryBadge(
+  s: 'ok' | 'warning' | 'unknown',
+  outOfRangeCount?: number,
+) {
   if (s === 'ok') return { label: 'Parâmetros OK', variant: 'success' as const };
-  if (s === 'warning') return { label: 'Atenção', variant: 'warning' as const };
+  if (s === 'warning') {
+    const n = outOfRangeCount ?? 0;
+    return {
+      label: n > 0 ? `${n} fora da faixa` : 'Atenção',
+      variant: 'warning' as const,
+    };
+  }
   return { label: 'Sem referência', variant: 'default' as const };
 }
 
@@ -38,7 +47,9 @@ export function DashboardPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl font-semibold">Seus aquários</h2>
-          <p className="text-sm text-muted-foreground">Cards com fauna viva e resumo do último teste de água</p>
+          <p className="text-sm text-muted-foreground">
+            Situação da água com base no último valor de cada parâmetro medido
+          </p>
         </div>
         <Link to="/aquariums/new">
           <Button>Novo aquário</Button>
@@ -50,8 +61,8 @@ export function DashboardPage() {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {items.map((a) => {
-          const s = a.lastWaterTest?.summary ?? 'unknown';
-          const b = summaryBadge(s);
+          const s = a.waterStatus ?? a.lastWaterTest?.summary ?? 'unknown';
+          const b = summaryBadge(s, a.lastWaterTest?.outOfRangeCount);
           return (
             <Link key={a.id} to={`/aquariums/${a.id}`} className="block">
               <Card className="h-full hover:border-primary/40 hover:shadow-md transition-shadow cursor-pointer">
@@ -70,13 +81,20 @@ export function DashboardPage() {
                   </p>
                   <p>Fauna viva: {a.aliveQuantity} indivíduos (soma quantidades)</p>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-muted-foreground">Último teste</span>
-                    {a.lastWaterTest ? <Badge variant={b.variant}>{b.label}</Badge> : <Badge>Nenhum</Badge>}
+                    <span className="text-muted-foreground">Situação da água</span>
+                    {a.lastWaterTest ? <Badge variant={b.variant}>{b.label}</Badge> : <Badge>Nenhum teste</Badge>}
                   </div>
                   {a.lastWaterTest ? (
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(a.lastWaterTest.testedAt).toLocaleString('pt-BR')}
-                    </p>
+                    <>
+                      <p className="text-xs text-muted-foreground">
+                        Último registro: {new Date(a.lastWaterTest.testedAt).toLocaleString('pt-BR')}
+                      </p>
+                      {a.lastWaterTest.outOfRangeParameters.length > 0 ? (
+                        <p className="text-xs text-amber-600 dark:text-amber-400">
+                          Fora da faixa: {a.lastWaterTest.outOfRangeParameters.join(', ')}
+                        </p>
+                      ) : null}
+                    </>
                   ) : null}
                 </CardContent>
               </Card>
