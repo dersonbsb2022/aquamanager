@@ -249,7 +249,7 @@ export function AquariumDetailPage() {
       </div>
 
       <Tabs defaultValue="overview">
-        <TabsList className="flex-wrap">
+        <TabsList>
           <TabsTrigger value="overview">Visão geral</TabsTrigger>
           <TabsTrigger value="animals">Animais</TabsTrigger>
           <TabsTrigger value="tests">Testes</TabsTrigger>

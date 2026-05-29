@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Navigate, Outlet, Route, Routes, Link, useLocation } from 'react-router-dom';
+import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth.js';
 import { AquariumDetailPage } from './pages/AquariumDetailPage.js';
 import { DashboardPage } from './pages/DashboardPage.js';
@@ -9,7 +9,7 @@ import { NewWaterTestPage } from './pages/NewWaterTestPage.js';
 import { CreateUserPage } from './pages/CreateUserPage.js';
 import { SettingsPage } from './pages/SettingsPage.js';
 import { TestParametersPage } from './pages/TestParametersPage.js';
-import { Button } from './components/ui/button.js';
+import { AppHeader } from './components/AppHeader.js';
 
 const queryClient = new QueryClient();
 
@@ -21,27 +21,7 @@ function Shell() {
   }
   return (
     <div className="min-h-screen">
-      <header className="border-b border-border bg-card/80 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4">
-          <Link to="/" className="text-lg font-semibold text-primary">
-            AquaManager
-          </Link>
-          <nav className="flex flex-wrap items-center gap-2 text-sm">
-            <Link className="rounded-md px-3 py-1.5 text-muted-foreground hover:bg-accent hover:text-foreground" to="/">
-              Dashboard
-            </Link>
-            <Link className="rounded-md px-3 py-1.5 text-muted-foreground hover:bg-accent hover:text-foreground" to="/test-parameters">
-              Parâmetros
-            </Link>
-            <Link className="rounded-md px-3 py-1.5 text-muted-foreground hover:bg-accent hover:text-foreground" to="/settings">
-              Configurações
-            </Link>
-            <Button variant="outline" size="sm" type="button" onClick={() => logout()}>
-              Sair
-            </Button>
-          </nav>
-        </div>
-      </header>
+      <AppHeader onLogout={() => logout()} />
       <main className="mx-auto max-w-6xl px-4 py-8">
         <Outlet />
       </main>
