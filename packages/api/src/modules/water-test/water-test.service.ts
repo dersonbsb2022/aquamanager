@@ -2,7 +2,7 @@ import type { PrismaClient } from '@prisma/client';
 import { notFound } from '../../shared/errors/app-error.js';
 import { buildMeta, offsetFromPage } from '../../shared/utils/pagination.js';
 import { findOwnedAquarium } from '../../shared/middlewares/ownership.js';
-import { evaluateParameterStatus } from '../../shared/utils/range.js';
+import { computeIsWithinRange } from '../../shared/utils/range.js';
 import type { z } from 'zod';
 import type {
   createWaterTestBodySchema,
@@ -78,7 +78,7 @@ export async function createWaterTest(
     for (const row of body.results) {
       const range = rangeByParam.get(row.testParameterId) ?? null;
       const paramName = nameByParamId.get(row.testParameterId);
-      const isWithinRange = evaluateParameterStatus(row.value, paramName, range) === 'ok';
+      const isWithinRange = computeIsWithinRange(row.value, range, paramName);
       await tx.waterTestResult.create({
         data: {
           waterTestId: test.id,

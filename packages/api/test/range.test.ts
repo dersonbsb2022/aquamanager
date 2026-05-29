@@ -19,6 +19,10 @@ describe('utilitários de faixa', () => {
     expect(computeIsWithinRange(9, null)).toBe(null);
   });
 
+  it('sem faixa não conta como fora (null, não false)', () => {
+    expect(computeIsWithinRange(3.6, null, 'Nitrito (NO2)')).toBe(null);
+  });
+
   describe('salinidade densidade (SG×1000)', () => {
     it('ideal 1024–1026', () => {
       expect(evaluateSalinityDensityStatus(1024)).toBe('ok');
