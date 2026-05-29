@@ -32,21 +32,42 @@
   }
 
   html {
-    @apply overflow-x-hidden;
     width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    /* clip impede o arrasto lateral no Safari/iOS (16+), sem virar container de rolagem */
+    overflow-x: clip;
     overscroll-behavior-x: none;
   }
 
   body {
-    @apply overflow-x-hidden bg-background text-foreground antialiased;
+    @apply bg-background text-foreground antialiased;
+    position: relative;
     width: 100%;
     max-width: 100%;
+    overflow-x: hidden;
+    overflow-x: clip;
     overscroll-behavior-x: none;
   }
 
   #root {
-    @apply min-h-screen overflow-x-hidden;
+    @apply min-h-screen;
     width: 100%;
     max-width: 100%;
+    overflow-x: hidden;
+    overflow-x: clip;
+  }
+
+  /* Nenhuma palavra/URL longa deve empurrar o layout além da tela */
+  p,
+  h1,
+  h2,
+  h3,
+  li,
+  td,
+  th,
+  label,
+  textarea {
+    overflow-wrap: anywhere;
   }
 }
