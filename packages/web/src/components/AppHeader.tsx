@@ -33,9 +33,9 @@ export function AppHeader({ onLogout }: AppHeaderProps) {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
-        <Link to="/" className="shrink-0 text-lg font-semibold text-primary">
+    <header className="sticky top-0 z-40 w-full max-w-[100vw] border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+      <div className="mx-auto flex w-full min-w-0 max-w-6xl items-center justify-between gap-3 px-4 py-3">
+        <Link to="/" className="min-w-0 shrink-0 text-lg font-semibold text-primary">
           AquaManager
         </Link>
 

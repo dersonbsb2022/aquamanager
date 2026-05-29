@@ -20,9 +20,9 @@ function Shell() {
     return <Navigate to="/login" replace state={{ from: loc.pathname }} />;
   }
   return (
-    <div className="min-h-screen">
+    <div className="flex min-h-screen min-w-0 flex-col overflow-x-hidden">
       <AppHeader onLogout={() => logout()} />
-      <main className="mx-auto max-w-6xl px-4 py-8">
+      <main className="mx-auto w-full min-w-0 max-w-6xl flex-1 px-4 py-6 sm:py-8">
         <Outlet />
       </main>
     </div>

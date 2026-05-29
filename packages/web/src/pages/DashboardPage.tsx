@@ -43,7 +43,7 @@ export function DashboardPage() {
   const items = useMemo(() => q.data?.items ?? [], [q.data?.items]);
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 max-w-full space-y-6 overflow-x-hidden">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl font-semibold">Seus aquários</h2>

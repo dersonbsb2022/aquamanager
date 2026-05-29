@@ -2,7 +2,9 @@ import * as React from 'react';
 import * as TabsPrimitive from '@radix-ui/react-tabs';
 import { cn } from '../../lib/utils.js';
 
-export const Tabs = TabsPrimitive.Root;
+export const Tabs = ({ className, ...props }: React.ComponentProps<typeof TabsPrimitive.Root>) => (
+  <TabsPrimitive.Root className={cn('min-w-0 max-w-full', className)} {...props} />
+);
 
 export const TabsList = ({ className, ...props }: React.ComponentProps<typeof TabsPrimitive.List>) => (
   <TabsPrimitive.List
@@ -25,5 +27,5 @@ export const TabsTrigger = ({ className, ...props }: React.ComponentProps<typeof
 );
 
 export const TabsContent = ({ className, ...props }: React.ComponentProps<typeof TabsPrimitive.Content>) => (
-  <TabsPrimitive.Content className={cn('mt-6 outline-none', className)} {...props} />
+  <TabsPrimitive.Content className={cn('mt-6 min-w-0 max-w-full outline-none', className)} {...props} />
 );

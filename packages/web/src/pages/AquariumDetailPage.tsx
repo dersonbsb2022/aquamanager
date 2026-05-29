@@ -211,12 +211,12 @@ export function AquariumDetailPage() {
   const aq = detailQ.data;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-3">
+    <div className="min-w-0 max-w-full space-y-6 overflow-x-hidden">
+      <div className="flex w-full min-w-0 max-w-full flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="flex min-w-0 items-center gap-3">
             {aq ? <AquariumPhoto src={aq.photoUrl} name={aq.name} variant="inline" /> : null}
-            <h2 className="text-2xl font-semibold">{aq?.name ?? 'Aquário'}</h2>
+            <h2 className="min-w-0 truncate text-xl font-semibold sm:text-2xl">{aq?.name ?? 'Aquário'}</h2>
             {!aq?.isActive ? <Badge variant="warning">Inativo</Badge> : null}
           </div>
           {aq ? (
@@ -229,9 +229,9 @@ export function AquariumDetailPage() {
             ← Voltar ao painel
           </Link>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Link to={`/aquariums/${id}/water-tests/new`}>
-            <Button>Novo teste de água</Button>
+        <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+          <Link to={`/aquariums/${id}/water-tests/new`} className="w-full sm:w-auto">
+            <Button className="w-full sm:w-auto">Novo teste de água</Button>
           </Link>
           {aq?.isActive ? (
             <DeleteIconButton
@@ -248,8 +248,8 @@ export function AquariumDetailPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="overview">
-        <TabsList>
+      <Tabs defaultValue="overview" className="min-w-0 max-w-full">
+        <TabsList className="max-w-full">
           <TabsTrigger value="overview">Visão geral</TabsTrigger>
           <TabsTrigger value="animals">Animais</TabsTrigger>
           <TabsTrigger value="tests">Testes</TabsTrigger>
@@ -259,7 +259,7 @@ export function AquariumDetailPage() {
         </TabsList>
 
         <TabsContent value="overview">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid min-w-0 max-w-full gap-4 md:grid-cols-2">
             {aq ? <AquariumInfoPanel aquarium={aq} token={token} /> : null}
 
             <Card>
@@ -428,12 +428,12 @@ export function AquariumDetailPage() {
               <CardTitle>Resultados dos testes</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex flex-wrap items-end gap-3">
-                <div className="space-y-1">
+              <div className="flex w-full min-w-0 flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
+                <div className="min-w-0 w-full space-y-1 sm:max-w-xs">
                   <Label htmlFor="trendParam">Parâmetro (gráfico)</Label>
                   <select
                     id="trendParam"
-                    className="h-9 min-w-[240px] rounded-md border border-input bg-background px-2 text-sm text-foreground"
+                    className="h-9 w-full max-w-full rounded-md border border-input bg-background px-2 text-sm text-foreground"
                     value={trendParam}
                     onChange={(e) => setTrendParam(e.target.value)}
                   >
@@ -449,9 +449,10 @@ export function AquariumDetailPage() {
                   </select>
                 </div>
 
-                <div className="space-y-1">
+                <div className="min-w-0 w-full space-y-1 sm:w-auto">
                   <Label>Período</Label>
-                  <div className="flex gap-1 rounded-md border border-border bg-card p-1">
+                  <div className="max-w-full overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    <div className="flex w-max gap-1 rounded-md border border-border bg-card p-1">
                     {(['this_month', 'last_month', 'this_year'] as const).map((p) => (
                       <button
                         key={p}
@@ -464,6 +465,7 @@ export function AquariumDetailPage() {
                         {p === 'this_month' ? 'Mês atual' : p === 'last_month' ? 'Mês anterior' : 'Ano'}
                       </button>
                     ))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -480,12 +482,12 @@ export function AquariumDetailPage() {
                 <p className="text-sm text-muted-foreground">Selecione um parâmetro para ver a tendência.</p>
               )}
 
-              <div className="flex flex-wrap items-end gap-3">
-                <div className="space-y-1">
+              <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+                <div className="min-w-0 w-full space-y-1 sm:max-w-xs">
                   <Label htmlFor="paramFilter">Parâmetro (filtro do teste selecionado)</Label>
                   <select
                     id="paramFilter"
-                    className="h-9 min-w-[240px] rounded-md border border-input bg-background px-2 text-sm text-foreground"
+                    className="h-9 w-full max-w-full rounded-md border border-input bg-background px-2 text-sm text-foreground"
                     value={paramFilter}
                     onChange={(e) => setParamFilter(e.target.value)}
                   >

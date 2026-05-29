@@ -56,14 +56,14 @@ export function AquariumPhoto({ src, name, variant = 'hero', className = '' }: A
       <img
         src={resolved}
         alt=""
-        className={`max-h-64 w-full max-w-md rounded-xl border border-border object-contain bg-muted/60 shadow-sm ${className}`}
+        className={`max-h-64 w-full max-w-full rounded-xl border border-border object-contain bg-muted/60 shadow-sm sm:max-w-md ${className}`}
       />
     );
   }
 
   return (
     <div
-      className={`flex h-40 w-full max-w-md items-center justify-center rounded-xl border border-dashed border-border bg-muted text-2xl font-medium text-muted-foreground ${className}`}
+      className={`flex h-40 w-full max-w-full items-center justify-center rounded-xl border border-dashed border-border bg-muted text-2xl font-medium text-muted-foreground sm:max-w-md ${className}`}
       aria-hidden
     >
       {initial}

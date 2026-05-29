@@ -73,10 +73,10 @@ export function WaterTestTrendChart({
   const showBand = idealMin != null && idealMax != null && idealMax > idealMin;
 
   return (
-    <div className="space-y-2">
+    <div className="min-w-0 max-w-full space-y-2 overflow-hidden">
       <p className="text-xs font-medium text-muted-foreground">Tendência — {parameterName}</p>
-      <div className="h-52 w-full">
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="h-52 min-w-0 w-full max-w-full overflow-hidden">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           <LineChart data={data} margin={{ top: 8, right: 12, left: 4, bottom: 0 }}>
             {showBand ? (
               <ReferenceArea y1={idealMin!} y2={idealMax!} fill="#22c55e" fillOpacity={0.12} />

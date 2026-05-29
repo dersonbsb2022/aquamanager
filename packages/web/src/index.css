@@ -31,7 +31,22 @@
     @apply border-border;
   }
 
+  html {
+    @apply overflow-x-hidden;
+    width: 100%;
+    overscroll-behavior-x: none;
+  }
+
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply overflow-x-hidden bg-background text-foreground antialiased;
+    width: 100%;
+    max-width: 100%;
+    overscroll-behavior-x: none;
+  }
+
+  #root {
+    @apply min-h-screen overflow-x-hidden;
+    width: 100%;
+    max-width: 100%;
   }
 }
